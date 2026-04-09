@@ -5,6 +5,9 @@ Aura is a high-performance Android application that identifies music in real-tim
 
 Developed as a core project for the **Signals and Systems** coursework during my 2nd year, this application serves as a practical, real-world demonstration of frequency domain transformations and audio signal processing.
 
+![Slide1](https://github.com/user-attachments/assets/1fdc32dc-c58b-4fa4-a570-4f2d7c55f176)
+
+
 ---
 
 ## Key Features
