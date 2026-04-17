@@ -23,7 +23,7 @@ This application serves as a practical implementation of continuous-time and dis
 8. [Installation and Configuration](#8-installation-and-configuration)
 9. [Usage Instructions](#9-usage-instructions)
 10. [Future Scope](#10-future-scope)
-11. [License](#11-license)
+11. [License and Citation](#11-license-and-citation)
 
 ---
 
