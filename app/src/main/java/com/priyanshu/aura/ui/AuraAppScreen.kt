@@ -84,7 +84,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            
+
             // Header
             Text(
                 text = "A U R A",
@@ -93,7 +93,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 color = MaterialTheme.colorScheme.onBackground,
                 letterSpacing = 8.sp
             )
-            
+
             Spacer(modifier = Modifier.height(80.dp))
 
             // Main interaction area
@@ -104,7 +104,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 contentAlignment = Alignment.Center
             ) {
                 // Pulsating Ripple
-                if (state is AuraState.Recording) {
+                if (state is AuraState.Listening) {
                     RippleEffect()
                 }
 
@@ -113,7 +113,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
-                        .background(if (state is AuraState.Recording) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.surface)
+                        .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
                         .clickable {
                             if (state is AuraState.Idle) {
                                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -127,7 +127,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    val isListening = state is AuraState.Recording
+                    val isListening = state is AuraState.Listening
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Listen",
@@ -153,7 +153,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
             }
 
             AnimatedVisibility(
-                visible = state is AuraState.Recording,
+                visible = state is AuraState.Listening,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -164,7 +164,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(24.dp))
-                    val fftData = (state as? AuraState.Recording)?.fftData ?: FloatArray(0)
+                    val fftData = (state as? AuraState.Listening)?.fftData ?: FloatArray(0)
                     AudioVisualizer(fftData)
                 }
             }
@@ -187,7 +187,28 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         ) {
             val result = (state as? AuraState.Success)?.result
             if (result != null) {
-                ResultBottomSheet(result = result, onClose = { viewModel.resetToIdle() })
+                ResultBottomSheet(
+                    result = result,
+                    onClose = { viewModel.resetToIdle() },
+                    onExplain = { viewModel.showExplanation() }
+                )
+            }
+        }
+
+        // Explanation Full Screen
+        AnimatedVisibility(
+            visible = state is AuraState.Explanation,
+            enter = fadeIn(tween(400)),
+            exit = fadeOut(tween(300)),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val stateData = state as? AuraState.Explanation
+            if (stateData != null) {
+                ExplanationScreen(
+                    result = stateData.result,
+                    fftSnapshot = stateData.fftSnapshot,
+                    onBack = { viewModel.hideExplanation() }
+                )
             }
         }
     }
@@ -238,7 +259,7 @@ fun AudioVisualizer(fftData: FloatArray) {
             val cleanMagnitude = (magnitude * 5).coerceIn(0f, 1f) // Amplification factor for visuals
             val barHeight = cleanMagnitude * maxBarHeight
             val x = index * 2 * barWidth + barWidth / 2
-            
+
             drawRoundRect(
                 color = Color(0xFF00E5FF),
                 topLeft = Offset(x, maxBarHeight - barHeight),
@@ -290,7 +311,7 @@ fun SkeletonLoader() {
 }
 
 @Composable
-fun ResultBottomSheet(result: SongResult, onClose: () -> Unit) {
+fun ResultBottomSheet(result: SongResult, onClose: () -> Unit, onExplain: () -> Unit) {
     val context = LocalContext.current
 
     Surface(
@@ -308,13 +329,23 @@ fun ResultBottomSheet(result: SongResult, onClose: () -> Unit) {
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Text(
+                    text = "How this works?",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable { onExplain() }
+                        .padding(8.dp)
+                )
                 IconButton(onClick = onClose) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            
+
             // Result Icon/Cover placeholder
             Box(
                 modifier = Modifier
@@ -330,9 +361,9 @@ fun ResultBottomSheet(result: SongResult, onClose: () -> Unit) {
                     modifier = Modifier.size(48.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Text(
                 text = result.title,
                 fontSize = 28.sp,
@@ -340,16 +371,16 @@ fun ResultBottomSheet(result: SongResult, onClose: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = result.artist,
                 fontSize = 18.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Action Buttons
@@ -357,53 +388,59 @@ fun ResultBottomSheet(result: SongResult, onClose: () -> Unit) {
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                if (result.spotifyId != null) {
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/track/${result.spotifyId}"))
-                            // Also try to open intent directly by apps if supported
-                            val launchIntent = context.packageManager.getLaunchIntentForPackage("com.spotify.music")
-                            if(launchIntent != null){
-                                intent.setPackage("com.spotify.music")
-                            }
-                            // Using safe start activity
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                // Fallback if app fails to start for some reason
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/track/${result.spotifyId}")))
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1DB954), contentColor = Color.White),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Spotify", fontWeight = FontWeight.SemiBold)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
+                // Smart Spotify Button
+                Button(
+                    onClick = {
+                        val intent = if (result.spotifyId != null) {
+                            // Direct link if ID exists
+                            Intent(Intent.ACTION_VIEW, Uri.parse("spotify:track:${result.spotifyId}"))
+                        } else {
+                            // Fallback: Search Spotify for Title + Artist
+                            val query = Uri.encode("${result.title} ${result.artist}")
+                            Intent(Intent.ACTION_VIEW, Uri.parse("spotify:search:$query"))
+                        }
+
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If Spotify app isn't installed, open in browser
+                            val webQuery = Uri.encode("${result.title} ${result.artist}")
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com/search/$webQuery")))
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1DB954), contentColor = Color.White),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (result.spotifyId != null) "Spotify" else "Search Spotify", fontWeight = FontWeight.SemiBold)
                 }
-                
-                if (result.youtubeId != null) {
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${result.youtubeId}"))
-                            val launchIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.youtube")
-                            if(launchIntent != null){
-                                intent.setPackage("com.google.android.youtube")
-                            }
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${result.youtubeId}")))
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000), contentColor = Color.White),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("YouTube", fontWeight = FontWeight.SemiBold)
-                    }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Smart YouTube Button
+                Button(
+                    onClick = {
+                        val intent = if (result.youtubeId != null) {
+                            // Direct link if ID exists
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=${result.youtubeId}"))
+                        } else {
+                            // Fallback: Search YouTube for Title + Artist
+                            val query = Uri.encode("${result.title} ${result.artist}")
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$query"))
+                        }
+
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000), contentColor = Color.White),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (result.youtubeId != null) "YouTube" else "Search YouTube", fontWeight = FontWeight.SemiBold)
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
