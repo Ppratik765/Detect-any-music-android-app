@@ -13,8 +13,10 @@ This application serves as a practical implementation of continuous-time and dis
     - [Time-Domain Acquisition](#time-domain-acquisition)
     - [The Fast Fourier Transform](#the-fast-fourier-transform)
     - [Acoustic Fingerprinting](#acoustic-fingerprinting)
+    - [Query by Humming (QbH)](#query-by-humming-qbh)
 3. [System Architecture](#3-system-architecture)
     - [Application Layers](#application-layers)
+    - [Intelligent Localisation Parsing](#intelligent-localisation-parsing)
     - [Fault Tolerance](#fault-tolerance)
 4. [Core Features](#4-core-features)
 5. [Technology Stack](#5-technology-stack)
@@ -40,7 +42,7 @@ By handling hardware-level audio buffers, implementing mathematical transformati
 The core functionality of Aura relies heavily on digital signal processing (DSP) principles.
 
 ### Time-Domain Acquisition
-Environmental audio is captured via the device microphone using the Android `AudioRecord` API. The continuous analog signal is discretized into a digital format.
+Environmental audio is captured via the device microphone using the Android `AudioRecord` API. The continuous analog signal is discretised into a digital format.
 * **Sample Rate:** 44,100 Hz (Standard CD quality, satisfying the Nyquist-Shannon sampling theorem for human hearing ranges up to ~22 kHz).
 * **Format:** 16-bit PCM (Pulse-Code Modulation), providing 65,536 possible amplitude values per sample.
 * **Buffer Size:** Captured in asynchronous chunks to prevent main-thread blocking, representing the signal in the Time Domain $f(t)$.
@@ -53,13 +55,16 @@ Aura utilises the Fast Fourier Transform (FFT), an optimised algorithm for compu
 The continuous transformation is defined as:
 $$F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-i\omega t}dt$$
 
-In the digital implementation, the FFT processes the windowed PCM buffers to extract the dominant constituent frequencies (sine and cosine waves). These frequency bins are pushed to the UI layer to render the real-time visualizer, proving active spectral analysis.
+In the digital implementation, the FFT processes the windowed PCM buffers to extract the dominant constituent frequencies (sine and cosine waves). These frequency bins are pushed to the UI layer to render the real-time visualiser, proving active spectral analysis.
 
 ### Acoustic Fingerprinting
-Rather than transmitting raw audio, which is bandwidth-intensive and privacy-invasive, the system (via the ACRCloud engine) creates an acoustic fingerprint. 
+When listening to a master recording (a studio track), the system creates an acoustic fingerprint:
 1.  **Spectrogram Generation:** The FFT outputs are plotted on a 3D graph (Time vs. Frequency vs. Amplitude).
 2.  **Peak Extraction:** Only the highest amplitude points (local maxima) are retained, discarding background noise.
 3.  **Constellation Mapping:** These peaks form a geometric constellation map. The spatial relationship between these points forms a lightweight, highly unique cryptographic hash that is insensitive to volume changes and minor distortion.
+
+### Query by Humming (QbH)
+To support human vocal recognition, Aura simultaneously processes the audio buffer through a Query by Humming engine. Unlike fingerprinting, which maps all constituent frequencies, the QbH algorithm isolates the **fundamental pitch contour** of the human voice over time. It extracts the raw melody line and matches this isolated mathematical contour against an expansive database of MIDI files and recorded compositions.
 
 ---
 
@@ -68,9 +73,12 @@ Rather than transmitting raw audio, which is bandwidth-intensive and privacy-inv
 Aura is built strictly adhering to the **MVVM (Model-View-ViewModel)** architectural pattern, ensuring a unidirectional data flow and clear separation of concerns.
 
 ### Application Layers
-* **UI Layer (Jetpack Compose):** A declarative, state-driven interface. It observes state flows from the ViewModel. Includes a custom `Canvas` implementation for rendering the fluid FFT bar visualizer at 60 FPS.
-* **Presentation Layer (ViewModel):** Manages the state machine (Idle, Listening, Processing, Success, Error). Utilizes Kotlin Coroutines (`viewModelScope`) to handle asynchronous hardware and network operations without blocking the main UI thread.
-* **Domain / Data Layer (Repositories):** Interfaces with the hardware (`AudioRecordManager`) and the remote server (`ACRCloudRepository`). It abstracts the data sources so the ViewModel remains agnostic of the underlying implementation.
+* **UI Layer (Jetpack Compose):** A declarative, state-driven interface. It observes state flows from the ViewModel. Includes a custom `Canvas` implementation for rendering the fluid FFT bar visualiser at 60 FPS, alongside a Smart Fallback UI for metadata routing.
+* **Presentation Layer (ViewModel):** Manages the state machine (Idle, Listening, Processing, Success, Error). Utilises Kotlin Coroutines (`viewModelScope`) to handle asynchronous hardware and network operations without blocking the main UI thread.
+* **Domain / Data Layer (Repositories):** Interfaces with the hardware (`AudioRecordManager`) and the remote server (`ACRCloudRepository`). It implements a combined-engine network request, resolving both fingerprint and melody matches simultaneously.
+
+### Intelligent Localisation Parsing
+Due to the global nature of the QbH database, melody matches frequently return regional or non-English metadata (e.g., Japanese karaoke tracks). Aura's data layer implements an algorithmic filter using Regular Expressions (Regex). It scans the returned JSON array of potential matches and actively prioritises track data encoded in standard English (ASCII) characters, ensuring a consistent and readable user experience.
 
 ### Fault Tolerance
 A critical engineering requirement was robustness during live demonstrations. The application features a "Demo-Safe" fallback architecture. If the ACRCloud API experiences rate limiting, server outages, or if the device loses network connectivity, the repository layer catches the `IOException` or HTTP 4xx/5xx errors and yields a deterministic mock success state. This guarantees uninterrupted application flow during critical presentations.
@@ -79,11 +87,11 @@ A critical engineering requirement was robustness during live demonstrations. Th
 
 ## 4. Core Features
 
-* **Real-Time Spectral Visualization:** Transforms raw PCM audio arrays into dynamic, visual frequency bars using Jetpack Compose graphics APIs.
-* **High-Fidelity Audio Fingerprinting:** Leverages a robust database of over 80 million commercial tracks for highly accurate identification within seconds.
-* **Rich Metadata Retrieval:** Parses complex JSON responses to extract the Track Title, Artist Name, Album Art, and external identifiers (Spotify and YouTube IDs).
+* **Dual-Engine Recognition:** Simultaneously queries Master Recordings (via Fingerprinting) and Musical Compositions (via QbH pitch contour extraction).
+* **Real-Time Spectral Visualisation:** Transforms raw PCM audio arrays into dynamic, visual frequency bars using Jetpack Compose graphics APIs.
+* **Intelligent Localisation Filtering:** Actively parses and sanitises JSON arrays to prioritise recognisable, standard English metadata over regional variants.
+* **Smart Fallback UI:** Deep-links directly to specific tracks on Spotify and YouTube when exact IDs are present, and seamlessly falls back to executing dynamic search queries on those platforms when only the composition melody is matched.
 * **Asynchronous Processing:** Entirely coroutine-based architecture ensuring zero UI thread starvation during heavy FFT mathematical computations or network latency.
-* **Graceful Permissions Handling:** Implements modern Android permission contracts for `RECORD_AUDIO`, ensuring a seamless user onboarding experience.
 
 ---
 
@@ -103,9 +111,9 @@ A critical engineering requirement was robustness during live demonstrations. Th
 
 ## 6. API Integration and Security
 
-Aura integrates with the ACRCloud REST API (`/v1/identify`). For security purposes, ACRCloud does not use static API keys. Instead, it requires a dynamically generated HMAC-SHA1 signature for every single request.
+Aura integrates with the ACRCloud REST API (`/v1/identify`) utilising their combined fingerprinting and humming engine. 
 
-The application securely constructs this signature by hashing a string payload containing the HTTP Method, HTTP URI, Access Key, Data Type, Signature Version, and the current UNIX timestamp, signed using the Secret Key. 
+For security purposes, ACRCloud does not use static API keys. Instead, it requires a dynamically generated HMAC-SHA1 signature for every single request. The application securely constructs this signature by hashing a string payload containing the HTTP Method, HTTP URI, Access Key, Data Type, Signature Version, and the current UNIX timestamp, signed using the Secret Key. 
 
 Due to the sensitive nature of the `Access Key` and `Secret Key`, these values are strictly excluded from version control. They are injected at compile-time via `local.properties` and the `BuildConfig` object.
 
@@ -207,6 +215,7 @@ If you utilise this architecture or preprocessing methodology in academic resear
 ```Plaintext
 Priyanshu Pratik. (2026). Aura: Real-Time Audio Fingerprinting & FFT Visualizer 
 Gati Shakti Vishwavidyalaya.
-For technical inquiries or pull request submissions, please refer to the issues tab or submit a standardised pull request detailing the proposed architectural changes.
 ```
+For technical inquiries or pull request submissions, please refer to the issues tab or submit a standardised pull request detailing the proposed architectural changes.
+
    
