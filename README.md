@@ -166,8 +166,8 @@ To compile and run this application locally, you must supply your own ACRCloud c
 Step-by-Step Setup
 1. Clone the Repository
     ```Bash
-    git clone [https://github.com/yourusername/aura.git](https://github.com/yourusername/aura.git)
-    cd aura
+    git clone [https://github.com/Ppratik765/Detect-any-music-android-app.git](https://github.com/Ppratik765/Detect-any-music-android-app.git)
+    cd Detect-any-music-android-app
     ```
 2. Acquire API Credentials
     * Navigate to the [ACRCloud Console](https://console.acrcloud.com/).
