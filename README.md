@@ -191,7 +191,7 @@ Step-by-Step Setup
 ## 9. Usage Instructions
 
   1. Launch the Aura application on your Android device.
-  2. Grant the requested RECORD_AUDIO permission upon initial startup.
+  2. Grant the requested `RECORD_AUDIO` permission upon initial startup.
   3. Ensure ambient music is playing in the background (via speakers, laptop, or public environment).
   4. Tap the central prominent action button to initiate the listening phase.
   5. Observe the real-time FFT visualizer reacting to the specific frequency bands of the audio source.
