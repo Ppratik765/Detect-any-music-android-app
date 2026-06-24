@@ -16,6 +16,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +37,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
@@ -52,6 +59,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,6 +73,8 @@ import com.priyanshu.aura.viewmodel.AuraViewModel
 fun AuraAppScreen(viewModel: AuraViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -80,115 +90,217 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            // Header
-            Text(
-                text = "A U R A",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = 8.sp
-            )
-
-            Spacer(modifier = Modifier.height(80.dp))
-
-            // Main interaction area
-            Box(
-                modifier = Modifier
-                    .size(300.dp)
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+        if (isLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pulsating Ripple
-                if (state is AuraState.Listening) {
-                    RippleEffect()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "A U R A",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        letterSpacing = 8.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    AnimatedVisibility(
+                        visible = state is AuraState.Idle,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Text(
+                            text = "Tap to listen",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = state is AuraState.Listening,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Listening...",
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            val fftData = (state as? AuraState.Listening)?.fftData ?: FloatArray(0)
+                            AudioVisualizer(fftData)
+                        }
+                    }
+
+                    AnimatedVisibility(
+                        visible = state is AuraState.Processing,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        SkeletonLoader()
+                    }
                 }
 
-                // Central Button
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
-                        .clickable {
-                            if (state is AuraState.Idle) {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                    viewModel.handleActionButtonClick()
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                }
-                            } else {
-                                viewModel.handleActionButtonClick()
-                            }
-                        },
+                        .size(200.dp)
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    val isListening = state is AuraState.Listening
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Listen",
-                        tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.background,
-                        modifier = Modifier.size(64.dp)
-                    )
+                    if (state is AuraState.Listening) {
+                        RippleEffect()
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
+                            .clickable {
+                                if (state is AuraState.Idle) {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                        viewModel.handleActionButtonClick()
+                                    } else {
+                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    }
+                                } else {
+                                    viewModel.handleActionButtonClick()
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val isListening = state is AuraState.Listening
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Listen",
+                            tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // State specific content
-            AnimatedVisibility(
-                visible = state is AuraState.Idle,
-                enter = fadeIn(),
-                exit = fadeOut()
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
+
+                // Header
                 Text(
-                    text = "Tap to listen",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    text = "A U R A",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = 8.sp
                 )
-            }
 
-            AnimatedVisibility(
-                visible = state is AuraState.Listening,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Listening...",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    val fftData = (state as? AuraState.Listening)?.fftData ?: FloatArray(0)
-                    AudioVisualizer(fftData)
+                Spacer(modifier = Modifier.height(80.dp))
+
+                // Main interaction area
+                Box(
+                    modifier = Modifier
+                        .size(300.dp)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Pulsating Ripple
+                    if (state is AuraState.Listening) {
+                        RippleEffect()
+                    }
+
+                    // Central Button
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
+                            .clickable {
+                                if (state is AuraState.Idle) {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                        viewModel.handleActionButtonClick()
+                                    } else {
+                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    }
+                                } else {
+                                    viewModel.handleActionButtonClick()
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val isListening = state is AuraState.Listening
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Listen",
+                            tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
                 }
-            }
 
-            AnimatedVisibility(
-                visible = state is AuraState.Processing,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                SkeletonLoader()
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // State specific content
+                AnimatedVisibility(
+                    visible = state is AuraState.Idle,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Text(
+                        text = "Tap to listen",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = state is AuraState.Listening,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Listening...",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        val fftData = (state as? AuraState.Listening)?.fftData ?: FloatArray(0)
+                        AudioVisualizer(fftData)
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = state is AuraState.Processing,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    SkeletonLoader()
+                }
             }
         }
 
         // Result Sheet
+        val enterAnimation = if (isLandscape) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
+        val exitAnimation = if (isLandscape) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
+
         AnimatedVisibility(
             visible = state is AuraState.Success,
-            enter = fadeIn(tween(500)),
-            exit = fadeOut(tween(300)),
-            modifier = Modifier.align(Alignment.BottomCenter)
+            enter = enterAnimation,
+            exit = exitAnimation,
+            modifier = Modifier.align(if (isLandscape) Alignment.CenterEnd else Alignment.BottomCenter)
         ) {
             val result = (state as? AuraState.Success)?.result
             if (result != null) {
                 ResultBottomSheet(
                     result = result,
+                    isLandscape = isLandscape,
                     onClose = { viewModel.resetToIdle() },
                     onExplain = { viewModel.showExplanation() }
                 )
@@ -311,19 +423,29 @@ fun SkeletonLoader() {
 }
 
 @Composable
-fun ResultBottomSheet(result: SongResult, onClose: () -> Unit, onExplain: () -> Unit) {
+fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
     val context = LocalContext.current
 
-    Surface(
-        modifier = Modifier
+    val sheetModifier = if (isLandscape) {
+        Modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.5f)
+            .clip(RoundedCornerShape(topStart = 32.dp, bottomStart = 32.dp))
+    } else {
+        Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)),
+            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+    }
+
+    Surface(
+        modifier = sheetModifier,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 16.dp
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
