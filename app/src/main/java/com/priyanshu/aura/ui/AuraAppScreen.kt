@@ -430,21 +430,26 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
         Modifier
             .fillMaxHeight()
             .fillMaxWidth(0.5f)
-            .clip(RoundedCornerShape(topStart = 32.dp, bottomStart = 32.dp))
     } else {
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+    }
+
+    val sheetShape = if (isLandscape) {
+        RoundedCornerShape(topStart = 32.dp, bottomStart = 32.dp)
+    } else {
+        RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
     }
 
     Surface(
         modifier = sheetModifier,
+        shape = sheetShape,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 16.dp
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
