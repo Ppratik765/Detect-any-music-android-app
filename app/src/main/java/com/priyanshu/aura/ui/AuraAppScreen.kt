@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -75,6 +76,10 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    
+    // Detect exceptionally small screens (like Galaxy Z Flip cover display)
+    val isCompactHeight = configuration.screenHeightDp < 480
+    val isCompactWidth = configuration.screenWidthDp < 360
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -195,18 +200,18 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 // Header
                 Text(
                     text = "A U R A",
-                    fontSize = 32.sp,
+                    fontSize = if (isCompactHeight) 24.sp else 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                     letterSpacing = 8.sp
                 )
 
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(if (isCompactHeight) 24.dp else 80.dp))
 
                 // Main interaction area
                 Box(
                     modifier = Modifier
-                        .size(300.dp)
+                        .size(if (isCompactHeight) 200.dp else 300.dp)
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -218,7 +223,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                     // Central Button
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(if (isCompactHeight) 80.dp else 120.dp)
                             .clip(CircleShape)
                             .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
                             .clickable {
@@ -239,12 +244,12 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "Listen",
                             tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(64.dp)
+                            modifier = Modifier.size(if (isCompactHeight) 40.dp else 64.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(if (isCompactHeight) 16.dp else 40.dp))
 
                 // State specific content
                 AnimatedVisibility(
@@ -361,6 +366,7 @@ fun RippleEffect() {
 fun AudioVisualizer(fftData: FloatArray) {
     Canvas(
         modifier = Modifier
+            .widthIn(max = 600.dp)
             .fillMaxWidth(0.8f)
             .height(100.dp)
     ) {
@@ -429,9 +435,11 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
     val sheetModifier = if (isLandscape) {
         Modifier
             .fillMaxHeight()
+            .widthIn(max = 500.dp)
             .fillMaxWidth(0.5f)
     } else {
         Modifier
+            .widthIn(max = 600.dp)
             .fillMaxWidth()
     }
 
@@ -451,7 +459,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(32.dp),
+                .padding(if (isCompactWidth) 16.dp else 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -476,7 +484,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
             // Result Icon/Cover placeholder
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(if (isCompactHeight) 80.dp else 120.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(com.priyanshu.aura.ui.theme.AuraCoverBg),
                 contentAlignment = Alignment.Center
