@@ -431,6 +431,9 @@ fun SkeletonLoader() {
 @Composable
 fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isCompactHeight = configuration.screenHeightDp < 480
+    val isCompactWidth = configuration.screenWidthDp < 360
 
     val sheetModifier = if (isLandscape) {
         Modifier
