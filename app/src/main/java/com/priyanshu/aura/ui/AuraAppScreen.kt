@@ -435,11 +435,11 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
     val isCompactHeight = configuration.screenHeightDp < 480
     val isCompactWidth = configuration.screenWidthDp < 360
 
+    val landscapeWidth = (configuration.screenWidthDp * 0.5f).dp.coerceIn(350.dp, 500.dp)
     val sheetModifier = if (isLandscape) {
         Modifier
             .fillMaxHeight()
-            .widthIn(max = 500.dp)
-            .fillMaxWidth(0.5f)
+            .width(landscapeWidth)
     } else {
         Modifier
             .widthIn(max = 600.dp)
