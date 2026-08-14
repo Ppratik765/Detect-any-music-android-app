@@ -76,7 +76,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isWideScreen = configuration.screenWidthDp >= 600
     
     // Detect exceptionally small screens (like Galaxy Z Flip cover display)
     val isCompactHeight = configuration.screenHeightDp < 480
@@ -106,13 +106,19 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
     }
 
 
+
+
+    val paddingEnd by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (state is AuraState.Success && isWideScreen) (configuration.screenWidthDp / 2f).dp else 0.dp,
+        animationSpec = tween(500),
+        label = "mainContentPadding"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        if (isLandscape) {
             // Top Right Icons
             Row(
                 modifier = Modifier
@@ -128,118 +134,13 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "A U R A",
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        letterSpacing = 8.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    AnimatedVisibility(
-                        visible = state is AuraState.Idle,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        Text(
-                            text = "Tap to listen",
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                        )
-                    }
-
-                    AnimatedVisibility(
-                        visible = state is AuraState.Listening,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Listening...",
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
-                            val fftData = (state as? AuraState.Listening)?.fftData ?: FloatArray(0)
-                            AudioVisualizer(fftData)
-                        }
-                    }
-
-                    AnimatedVisibility(
-                        visible = state is AuraState.Processing,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        SkeletonLoader()
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (state is AuraState.Listening) {
-                        RippleEffect()
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
-                            .clickable {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                if (state is AuraState.Idle) {
-                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                        viewModel.handleActionButtonClick()
-                                    } else {
-                                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                    }
-                                } else {
-                                    viewModel.handleActionButtonClick()
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val isListening = state is AuraState.Listening
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Listen",
-                            tint = if (isListening) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                }
-            }
-        } else {
-            // Top Right Icons
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                IconButton(onClick = { showSettings = true }) {
-                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
-                }
-                IconButton(onClick = { showHistory = true }) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-
+        // Main interaction area
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = paddingEnd),
+            contentAlignment = Alignment.Center
+        ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -341,14 +242,14 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         }
 
         // Result Sheet
-        val enterAnimation = if (isLandscape) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
-        val exitAnimation = if (isLandscape) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
+        val enterAnimation = if (isWideScreen) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
+        val exitAnimation = if (isWideScreen) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
 
         AnimatedVisibility(
             visible = state is AuraState.Success,
             enter = enterAnimation,
             exit = exitAnimation,
-            modifier = Modifier.align(if (isLandscape) Alignment.CenterEnd else Alignment.BottomCenter)
+            modifier = Modifier.align(if (isWideScreen) Alignment.CenterEnd else Alignment.BottomCenter)
         ) {
             val result = (state as? AuraState.Success)?.result
             if (result != null) {
@@ -357,7 +258,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 }
                 ResultBottomSheet(
                     result = result,
-                    isLandscape = isLandscape,
+                    isWideScreen = isWideScreen,
                     onClose = { viewModel.resetToIdle() },
                     onExplain = { viewModel.showExplanation() }
                 )
@@ -481,7 +382,7 @@ fun SkeletonLoader() {
 }
 
 @Composable
-fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
+fun ResultBottomSheet(result: SongResult, isWideScreen: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isCompactHeight = configuration.screenHeightDp < 480
@@ -495,12 +396,11 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
         isLyricsLoading = false
     }
 
-    val landscapeWidth = (configuration.screenWidthDp * 0.5f).dp.coerceIn(350.dp, 500.dp)
     val maxPortraitHeight = (configuration.screenHeightDp * 0.72f).dp
-    val sheetModifier = if (isLandscape) {
+    val sheetModifier = if (isWideScreen) {
         Modifier
             .fillMaxHeight()
-            .width(landscapeWidth)
+            .fillMaxWidth(0.5f)
     } else {
         Modifier
             .widthIn(max = 600.dp)
@@ -508,7 +408,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
             .height(maxPortraitHeight)
     }
 
-    val sheetShape = if (isLandscape) {
+    val sheetShape = if (isWideScreen) {
         RoundedCornerShape(topStart = 32.dp, bottomStart = 32.dp)
     } else {
         RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
