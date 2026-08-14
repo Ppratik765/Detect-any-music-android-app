@@ -42,8 +42,8 @@
 
         <service
             android:name=".audio.AuraQuickTileService"
-            android:label="Identify Playing"
-            android:icon="@drawable/ic_launcher_foreground"
+            android:label="Aura"
+            android:icon="@mipmap/ic_launcher"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
             <intent-filter>
