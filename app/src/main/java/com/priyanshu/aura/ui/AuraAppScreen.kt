@@ -65,6 +65,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.priyanshu.aura.network.SongResult
 import com.priyanshu.aura.viewmodel.AuraState
 import com.priyanshu.aura.viewmodel.AuraViewModel
@@ -79,6 +81,8 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
     // Detect exceptionally small screens (like Galaxy Z Flip cover display)
     val isCompactHeight = configuration.screenHeightDp < 480
     val isCompactWidth = configuration.screenWidthDp < 360
+    
+    val hapticFeedback = LocalHapticFeedback.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -197,6 +201,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                             .clip(CircleShape)
                             .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
                             .clickable {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (state is AuraState.Idle) {
                                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                                         viewModel.handleActionButtonClick()
@@ -270,6 +275,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                             .clip(CircleShape)
                             .background(if (state is AuraState.Listening) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Color.White)
                             .clickable {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (state is AuraState.Idle) {
                                     if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                                         viewModel.handleActionButtonClick()
@@ -346,6 +352,9 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         ) {
             val result = (state as? AuraState.Success)?.result
             if (result != null) {
+                LaunchedEffect(result) {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) // Success tactile feedback
+                }
                 ResultBottomSheet(
                     result = result,
                     isLandscape = isLandscape,

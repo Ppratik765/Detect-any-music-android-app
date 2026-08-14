@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,6 +56,7 @@ class CaptureActivity : ComponentActivity() {
         setContent {
             AuraTheme {
                 val orbState by OrbStateHolder.orbState.collectAsState()
+                val hapticFeedback = LocalHapticFeedback.current
 
                 Box(
                     modifier = Modifier
@@ -65,9 +68,11 @@ class CaptureActivity : ComponentActivity() {
                         is OrbState.Selection -> {
                             SelectionDialog(
                                 onAroundYou = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     startExternalAudio()
                                 },
                                 onOnDevice = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                     startActivityForResult(
                                         mediaProjectionManager.createScreenCaptureIntent(),
                                         REQUEST_MEDIA_PROJECTION
@@ -80,11 +85,17 @@ class CaptureActivity : ComponentActivity() {
                             GlowingOrb(isProcessing = state is OrbState.Processing)
                         }
                         is OrbState.Success -> {
+                            LaunchedEffect(state.result) {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
                             SuccessCard(state.result) {
                                 finish()
                             }
                         }
                         is OrbState.Error -> {
+                            LaunchedEffect(state.message) {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
                             ErrorCard(state.message) {
                                 finish()
                             }
