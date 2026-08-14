@@ -59,6 +59,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import com.priyanshu.aura.network.LyricsRepository
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -483,6 +485,14 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
     val isCompactHeight = configuration.screenHeightDp < 480
     val isCompactWidth = configuration.screenWidthDp < 360
 
+    var lyricsText by remember { mutableStateOf<String?>(null) }
+    var isLyricsLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(result) {
+        lyricsText = LyricsRepository.getLyrics(result.title, result.artist)
+        isLyricsLoading = false
+    }
+
     val landscapeWidth = (configuration.screenWidthDp * 0.5f).dp.coerceIn(350.dp, 500.dp)
     val sheetModifier = if (isLandscape) {
         Modifier
@@ -627,7 +637,45 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Lyrics Section
+            Text(
+                text = "Lyrics",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (isLyricsLoading) {
+                Text(
+                    text = "Loading lyrics...",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
+            } else if (lyricsText.isNullOrBlank()) {
+                Text(
+                    text = "No lyrics found for this song.",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
+            } else {
+                Text(
+                    text = lyricsText ?: "",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    lineHeight = 24.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Start
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
