@@ -16,10 +16,37 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        handleIntent(intent)
+        
         setContent {
             AuraTheme {
                 AuraAppScreen(viewModel = auraViewModel)
             }
+        }
+    }
+    
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+    
+    private fun handleIntent(intent: android.content.Intent?) {
+        val title = intent?.getStringExtra("EXTRA_TITLE")
+        if (title != null) {
+            val artist = intent.getStringExtra("EXTRA_ARTIST") ?: ""
+            val albumCoverUrl = intent.getStringExtra("EXTRA_ALBUM_COVER_URL")
+            val spotifyId = intent.getStringExtra("EXTRA_SPOTIFY_ID")
+            val youtubeId = intent.getStringExtra("EXTRA_YOUTUBE_ID")
+            
+            val result = com.priyanshu.aura.network.SongResult(
+                title = title,
+                artist = artist,
+                albumCoverUrl = albumCoverUrl,
+                spotifyId = spotifyId,
+                youtubeId = youtubeId
+            )
+            auraViewModel.setResultFromIntent(result)
         }
     }
 }
