@@ -242,7 +242,23 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         }
 
         // Result Sheet
-        val enterAnimation = if (isPassportFoldable) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
+        val enterAnimation = if (isPassportFoldable) {
+            slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(tween(400))
+        } else {
+            slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioLowBouncy,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow
+                )
+            ) + fadeIn(tween(400))
+        }
         val exitAnimation = if (isPassportFoldable) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
 
         AnimatedVisibility(
@@ -317,15 +333,6 @@ fun RippleEffect() {
 
 @Composable
 fun AudioVisualizer(fftData: FloatArray) {
-    val hapticFeedback = LocalHapticFeedback.current
-    
-    LaunchedEffect(fftData) {
-        val sum = fftData.sum()
-        if (sum > 40f) { // Threshold for a noticeable beat/audio level
-            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-        }
-    }
-
     Canvas(
         modifier = Modifier
             .widthIn(max = 600.dp)

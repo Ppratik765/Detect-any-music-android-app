@@ -100,6 +100,8 @@ class CaptureActivity : ComponentActivity() {
                                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                 }
                                 startActivity(intent)
+                                @Suppress("DEPRECATION")
+                                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                                 finish()
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = "History", tint = Color.White)
@@ -153,6 +155,8 @@ class CaptureActivity : ComponentActivity() {
                         putExtra("EXTRA_YOUTUBE_ID", result.youtubeId)
                     }
                     startActivity(intent)
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                     finish()
                 } else {
                     OrbStateHolder.updateState(OrbState.Error("No match found"))
