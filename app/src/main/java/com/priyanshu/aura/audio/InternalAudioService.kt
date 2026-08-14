@@ -24,6 +24,8 @@ import com.priyanshu.aura.data.AuraDatabase
 import com.priyanshu.aura.data.HistoryEntity
 import com.priyanshu.aura.network.IdentificationRepository
 import com.priyanshu.aura.network.SongResult
+import com.priyanshu.aura.viewmodel.OrbState
+import com.priyanshu.aura.viewmodel.OrbStateHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -94,13 +96,18 @@ class InternalAudioService : Service() {
 
                 val audioBytes = out.toByteArray()
                 if (audioBytes.isNotEmpty()) {
+                    OrbStateHolder.updateState(OrbState.Processing)
                     val result = IdentificationRepository.identifyAudio(audioBytes)
                     if (result.title != "Never Gonna Give You Up" && result.title != "Unknown Title") {
                         saveToHistory(result)
+                        OrbStateHolder.updateState(OrbState.Success(result))
                         showResultNotification(result)
                     } else {
+                        OrbStateHolder.updateState(OrbState.Error("No match found"))
                         showErrorNotification()
                     }
+                } else {
+                    OrbStateHolder.updateState(OrbState.Error("Failed to record internal audio"))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
