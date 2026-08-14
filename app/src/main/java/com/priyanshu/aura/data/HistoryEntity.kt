@@ -9,6 +9,7 @@ data class HistoryEntity(
     val id: Int = 0,
     val title: String,
     val artist: String,
+    val albumCoverUrl: String? = null,
     val spotifyId: String?,
     val youtubeId: String?,
     val timestamp: Long = System.currentTimeMillis()

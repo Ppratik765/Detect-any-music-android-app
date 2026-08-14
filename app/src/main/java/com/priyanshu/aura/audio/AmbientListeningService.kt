@@ -67,6 +67,7 @@ class AmbientListeningService : Service() {
                                     HistoryEntity(
                                         title = result.title,
                                         artist = result.artist,
+                                        albumCoverUrl = result.albumCoverUrl,
                                         spotifyId = result.spotifyId,
                                         youtubeId = result.youtubeId
                                     )
