@@ -149,11 +149,19 @@ object IdentificationRepository {
             var youtubeId: String? = null
 
             if (externalMetadata != null) {
-                spotifyId = externalMetadata.optJSONObject("spotify")?.optJSONObject("track")?.optString("id", null)
-                youtubeId = externalMetadata.optJSONObject("youtube")?.optString("vid", null)
+                spotifyId = externalMetadata.optJSONObject("spotify")?.optJSONObject("track")?.optString("id", "")?.takeIf { it.isNotEmpty() }
+                youtubeId = externalMetadata.optJSONObject("youtube")?.optString("vid", "")?.takeIf { it.isNotEmpty() }
             }
 
-            SongResult(title, artistName, spotifyId, youtubeId)
+            val albumArt = ArtworkRepository.getArtworkUrl(title, artistName)
+
+            SongResult(
+                title = title,
+                artist = artistName,
+                albumCoverUrl = albumArt,
+                spotifyId = spotifyId,
+                youtubeId = youtubeId
+            )
         } catch (e: Exception) {
             Log.e(TAG, "parseAcrResponse failed", e)
             defaultFallback()
@@ -163,6 +171,7 @@ object IdentificationRepository {
     private fun defaultFallback() = SongResult(
         title = "Never Gonna Give You Up",
         artist = "Rick Astley",
+        albumCoverUrl = "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a4/66/1b/a4661b36-54a2-15f1-aa56-2dbb13b78cf3/00602537754388.rgb.jpg/600x600bb.jpg",
         spotifyId = "4cOdK2wGLETKBW3PvgPWqT",
         youtubeId = "dQw4w9WgXcQ"
     )
