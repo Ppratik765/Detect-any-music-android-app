@@ -3,7 +3,6 @@ package com.priyanshu.aura.audio
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -43,22 +42,23 @@ import kotlinx.coroutines.launch
 
 class CaptureActivity : ComponentActivity() {
 
-    companion object {
-        const val REQUEST_MEDIA_PROJECTION = 1001
-    }
-
-    private lateinit var mediaProjectionManager: MediaProjectionManager
     private val audioRecorder by lazy { AudioRecorder(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        OrbStateHolder.updateState(OrbState.Selection)
-        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        OrbStateHolder.updateState(OrbState.Listening)
 
         setContent {
             AuraTheme {
                 val orbState by OrbStateHolder.orbState.collectAsState()
                 val hapticFeedback = LocalHapticFeedback.current
+                
+                LaunchedEffect(Unit) {
+                    if (orbState is OrbState.Selection) {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        startExternalAudio()
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -68,20 +68,7 @@ class CaptureActivity : ComponentActivity() {
                 ) {
                     when (val state = orbState) {
                         is OrbState.Selection -> {
-                            SelectionDialog(
-                                onAroundYou = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    startExternalAudio()
-                                },
-                                onOnDevice = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    startActivityForResult(
-                                        mediaProjectionManager.createScreenCaptureIntent(),
-                                        REQUEST_MEDIA_PROJECTION
-                                    )
-                                },
-                                onClose = { finish() }
-                            )
+                            // Handled by LaunchedEffect which starts tracking immediately
                         }
                         is OrbState.Listening, is OrbState.Processing -> {
                             GlowingOrb(isProcessing = state is OrbState.Processing)
@@ -104,7 +91,7 @@ class CaptureActivity : ComponentActivity() {
                         }
                     }
 
-                    if (orbState !is OrbState.Selection) {
+                    if (orbState !is OrbState.Success && orbState !is OrbState.Error) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -149,74 +136,9 @@ class CaptureActivity : ComponentActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_MEDIA_PROJECTION) {
-            if (resultCode == RESULT_OK && data != null) {
-                OrbStateHolder.updateState(OrbState.Listening)
-                val intent = Intent(this, InternalAudioService::class.java).apply {
-                    putExtra("RESULT_CODE", resultCode)
-                    putExtra("DATA", data)
-                }
-                startForegroundService(intent)
-            } else {
-                finish() // User denied projection
-            }
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         audioRecorder.stopRecording()
-    }
-}
-
-@Composable
-fun SelectionDialog(onAroundYou: () -> Unit, onOnDevice: () -> Unit, onClose: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(0.85f)
-            .wrapContentHeight(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Identify Music",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = onAroundYou,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Search, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Option 1: Around You")
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onOnDevice,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Option 2: On This Device")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            TextButton(onClick = onClose) {
-                Text("Cancel")
-            }
-        }
     }
 }
 
