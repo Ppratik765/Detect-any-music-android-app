@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.priyanshu.aura.data.AuraDatabase
+import com.priyanshu.aura.data.HistoryEntity
 
 /**
  * V2 state machine:
@@ -40,6 +42,9 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<AuraState>(AuraState.Idle)
     val uiState: StateFlow<AuraState> = _uiState.asStateFlow()
+    
+    private val historyDao = AuraDatabase.getDatabase(application.applicationContext).historyDao()
+    val history = historyDao.getAllHistory()
 
     private val audioRecorder = AudioRecorder(application.applicationContext)
     private var recordingJob: Job? = null
@@ -89,6 +94,17 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
                     // always returning a SongResult (never throws).
                     val result = IdentificationRepository.identifyAudio(audioBytes)
 
+                    if (result is SongResult.Found) {
+                        historyDao.insertHistory(
+                            HistoryEntity(
+                                title = result.title,
+                                artist = result.artist,
+                                spotifyId = result.spotifyId,
+                                youtubeId = result.youtubeId
+                            )
+                        )
+                    }
+
                     // Transition: Processing ──▶ Success
                     _uiState.value = AuraState.Success(result, lastFft)
                 } else {
@@ -134,5 +150,21 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
     fun resetToIdle() {
         _uiState.value = AuraState.Idle
         recordingJob?.cancel()
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────
+    //  History Management
+    // ──────────────────────────────────────────────────────────────────────
+    
+    fun deleteHistoryItem(id: Int) {
+        viewModelScope.launch {
+            historyDao.deleteHistoryById(id)
+        }
+    }
+    
+    fun clearAllHistory() {
+        viewModelScope.launch {
+            historyDao.clearHistory()
+        }
     }
 }
