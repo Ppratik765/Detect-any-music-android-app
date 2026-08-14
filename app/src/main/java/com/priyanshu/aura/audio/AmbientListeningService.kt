@@ -50,7 +50,7 @@ class AmbientListeningService : Service() {
                     var audioBytes: ByteArray? = null
                     
                     val listenJob = launch {
-                        audioBytes = audioRecorder?.startRecording { _ -> }
+                        audioBytes = audioRecorder?.startRecording { _ -> true }
                     }
                     
                     delay(LISTEN_DURATION_MS)

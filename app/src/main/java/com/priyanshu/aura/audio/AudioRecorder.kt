@@ -30,7 +30,7 @@ class AudioRecorder(private val context: Context) {
      * Starts recording audio. Emits FFT magnitudes periodically and returns the raw PCM byte array upon completion.
      */
     suspend fun startRecording(
-        onFftData: (FloatArray) -> Unit
+        onFftData: (FloatArray) -> Boolean
     ): ByteArray? = withContext(Dispatchers.IO) {
 
         if (ActivityCompat.checkSelfPermission(
@@ -59,21 +59,29 @@ class AudioRecorder(private val context: Context) {
             val fftChunkSize = 2048
             val shortBuffer = ShortArray(fftChunkSize)
 
+            var isSaving = false
+
             while (isRecording && coroutineContext.isActive) {
                 val readResult = audioRecord.read(shortBuffer, 0, shortBuffer.size)
                 if (readResult > 0) {
-                    // Convert short array to byte array for ACRCloud
-                    val byteBuffer = ByteArray(readResult * 2)
-                    for (i in 0 until readResult) {
-                        val s = shortBuffer[i]
-                        byteBuffer[i * 2] = (s.toInt() and 0x00FF).toByte()
-                        byteBuffer[i * 2 + 1] = (s.toInt() shr 8).toByte()
-                    }
-                    rawAudioOut.write(byteBuffer)
-
                     // Compute FFT and give to UI
                     val magnitudes = FFT.computeMagnitudes(shortBuffer)
-                    onFftData(magnitudes)
+                    val shouldSave = onFftData(magnitudes) // Callback returns true if we should start/continue saving
+
+                    if (shouldSave) {
+                        isSaving = true
+                    }
+
+                    if (isSaving) {
+                        // Convert short array to byte array for ACRCloud
+                        val byteBuffer = ByteArray(readResult * 2)
+                        for (i in 0 until readResult) {
+                            val s = shortBuffer[i]
+                            byteBuffer[i * 2] = (s.toInt() and 0x00FF).toByte()
+                            byteBuffer[i * 2 + 1] = (s.toInt() shr 8).toByte()
+                        }
+                        rawAudioOut.write(byteBuffer)
+                    }
                 }
             }
         } catch (e: Exception) {

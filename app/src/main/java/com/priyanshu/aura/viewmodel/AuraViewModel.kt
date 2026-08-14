@@ -80,6 +80,7 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
                     lastFft = frame
                     _uiState.value = AuraState.Listening(frame)
                 }
+                true // Always save immediately in the main app
             }
 
             timeoutJob.cancel()

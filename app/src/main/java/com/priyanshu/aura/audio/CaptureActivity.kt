@@ -66,10 +66,10 @@ class CaptureActivity : ComponentActivity() {
                 ) {
                     when (val state = orbState) {
                         is OrbState.Selection -> {
-                            // Handled by LaunchedEffect which starts tracking immediately
+                            GlowingOrb(orbState = state)
                         }
                         is OrbState.Listening, is OrbState.Processing -> {
-                            GlowingOrb(isProcessing = state is OrbState.Processing)
+                            GlowingOrb(orbState = state)
                         }
                         is OrbState.Success -> {
                             // Should not be reached visually since we redirect, but handle just in case
@@ -112,18 +112,34 @@ class CaptureActivity : ComponentActivity() {
     }
 
     private fun startExternalAudio() {
-        OrbStateHolder.updateState(OrbState.Listening)
+        OrbStateHolder.updateState(OrbState.Selection) // Idle state initially
         lifecycleScope.launch {
-            // Automatically stop recording after 8 seconds (fast aesthetic identification)
-            val timeoutJob = launch {
-                kotlinx.coroutines.delay(8_000)
-                audioRecorder.stopRecording()
+            var audioDetected = false
+            var timeoutJob: kotlinx.coroutines.Job? = null
+            
+            val audioBytes = audioRecorder.startRecording { fftData ->
+                if (!audioDetected) {
+                    // Check if there is significant audio (VAD)
+                    val sum = fftData.sum()
+                    if (sum > 25f) { // Threshold for speech/music
+                        audioDetected = true
+                        OrbStateHolder.updateState(OrbState.Listening)
+                        
+                        // Automatically stop recording after 10 seconds of actual audio
+                        timeoutJob = launch {
+                            kotlinx.coroutines.delay(10_000)
+                            audioRecorder.stopRecording()
+                        }
+                    }
+                    audioDetected // Return true to start saving only when audio is detected
+                } else {
+                    true // Continue saving
+                }
             }
             
-            val audioBytes = audioRecorder.startRecording { _ -> }
-            timeoutJob.cancel()
+            timeoutJob?.cancel()
             
-            if (audioBytes != null && audioBytes.isNotEmpty()) {
+            if (audioBytes != null && audioBytes.isNotEmpty() && audioDetected) {
                 OrbStateHolder.updateState(OrbState.Processing)
                 val result = IdentificationRepository.identifyAudio(audioBytes)
                 if (result.title != "Never Gonna Give You Up" && result.title != "Unknown Title") {
@@ -154,7 +170,7 @@ class CaptureActivity : ComponentActivity() {
 }
 
 @Composable
-fun GlowingOrb(isProcessing: Boolean) {
+fun GlowingOrb(orbState: OrbState) {
     val infiniteTransition = rememberInfiniteTransition(label = "orbTransition")
     
     val scale by infiniteTransition.animateFloat(
@@ -222,8 +238,13 @@ fun GlowingOrb(isProcessing: Boolean) {
             
             Spacer(modifier = Modifier.height(32.dp))
             
+            val text = when (orbState) {
+                is OrbState.Processing -> "Processing..."
+                is OrbState.Listening -> "Listening..."
+                else -> "Play, sing or hum a song..."
+            }
             Text(
-                text = if (isProcessing) "Processing..." else "Play, sing or hum a song...",
+                text = text,
                 color = Color.White,
                 fontWeight = FontWeight.Medium,
                 fontSize = 18.sp
