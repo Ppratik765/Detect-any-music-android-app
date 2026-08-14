@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,8 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -101,6 +103,29 @@ class CaptureActivity : ComponentActivity() {
                             }
                         }
                     }
+
+                    if (orbState !is OrbState.Selection) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .padding(top = 48.dp, start = 24.dp, end = 24.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            IconButton(onClick = { finish() }) {
+                                Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            }
+                            IconButton(onClick = { 
+                                val intent = Intent(this@CaptureActivity, com.priyanshu.aura.MainActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                }
+                                startActivity(intent)
+                                finish()
+                            }) {
+                                Icon(androidx.compose.material.icons.Icons.Default.List, contentDescription = "History", tint = Color.White)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -172,7 +197,7 @@ fun SelectionDialog(onAroundYou: () -> Unit, onOnDevice: () -> Unit, onClose: ()
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.Mic, contentDescription = null)
+                Icon(Icons.Default.Search, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Option 1: Around You")
             }
@@ -183,7 +208,7 @@ fun SelectionDialog(onAroundYou: () -> Unit, onOnDevice: () -> Unit, onClose: ()
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
-                Icon(Icons.Default.PhoneAndroid, contentDescription = null)
+                Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Option 2: On This Device")
             }
@@ -197,53 +222,80 @@ fun SelectionDialog(onAroundYou: () -> Unit, onOnDevice: () -> Unit, onClose: ()
 
 @Composable
 fun GlowingOrb(isProcessing: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "orbTransition")
     
     val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
+        initialValue = 1.0f,
+        targetValue = 1.3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "orbScale"
     )
 
     val color by infiniteTransition.animateColor(
-        initialValue = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-        targetValue = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+        initialValue = Color(0xFF6C5CE7).copy(alpha = 0.4f),
+        targetValue = Color(0xFF74B9FF).copy(alpha = 0.8f),
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
+            animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "orbColor"
     )
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        // Massive soft glow
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(350.dp)
                 .scale(scale)
-                .clip(CircleShape)
                 .background(
                     brush = Brush.radialGradient(
                         colors = listOf(color, Color.Transparent)
                     )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
+                )
+        )
+        
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Waveform
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 5 bars animating
+                listOf(0, 1, 2, 3, 4).forEach { index ->
+                    val height by infiniteTransition.animateFloat(
+                        initialValue = if (index % 2 == 0) 24f else 48f,
+                        targetValue = if (index % 2 == 0) 64f else 32f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(300 + index * 100, easing = FastOutLinearInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "barHeight"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(6.dp)
+                            .height(height.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.White)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            Text(
+                text = if (isProcessing) "Processing..." else "Play, sing or hum a song...",
+                color = Color.White,
+                fontWeight = FontWeight.Medium,
+                fontSize = 18.sp
             )
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = if (isProcessing) "Processing..." else "Listening...",
-            color = Color.White,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18.sp
-        )
     }
 }
 

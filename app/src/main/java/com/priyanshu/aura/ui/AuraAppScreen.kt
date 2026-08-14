@@ -505,7 +505,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
         Modifier
             .widthIn(max = 600.dp)
             .fillMaxWidth()
-            .heightIn(max = maxPortraitHeight)
+            .height(maxPortraitHeight)
     }
 
     val sheetShape = if (isLandscape) {
