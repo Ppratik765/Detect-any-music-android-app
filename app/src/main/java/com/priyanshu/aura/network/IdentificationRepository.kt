@@ -124,7 +124,7 @@ object IdentificationRepository {
         return jsonArray.getJSONObject(0)
     }
 
-    private fun parseAcrResponse(jsonString: String): SongResult {
+    private suspend fun parseAcrResponse(jsonString: String): SongResult {
         return try {
             val root = JSONObject(jsonString)
             val status = root.getJSONObject("status")
