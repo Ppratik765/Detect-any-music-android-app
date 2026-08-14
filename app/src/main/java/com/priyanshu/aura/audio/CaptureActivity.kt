@@ -15,7 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
@@ -102,7 +102,7 @@ class CaptureActivity : ComponentActivity() {
                                 startActivity(intent)
                                 finish()
                             }) {
-                                Icon(androidx.compose.material.icons.Icons.Default.List, contentDescription = "History", tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "History", tint = Color.White)
                             }
                         }
                     }
@@ -212,6 +212,7 @@ fun GlowingOrb(orbState: OrbState) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             // Waveform
             Row(
+                modifier = Modifier.height(64.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
