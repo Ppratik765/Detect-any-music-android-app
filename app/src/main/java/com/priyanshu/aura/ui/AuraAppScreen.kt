@@ -62,6 +62,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import com.priyanshu.aura.network.LyricsRepository
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -556,20 +559,32 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                 }
             }
 
-            // Result Icon/Cover placeholder
+            // Result Song Album Art Thumbnail
             Box(
                 modifier = Modifier
-                    .size(if (isCompactHeight) 80.dp else 120.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(if (isCompactHeight) 90.dp else 130.dp)
+                    .clip(RoundedCornerShape(20.dp))
                     .background(com.priyanshu.aura.ui.theme.AuraCoverBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
+                if (!result.albumCoverUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(result.albumCoverUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = result.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
