@@ -317,6 +317,15 @@ fun RippleEffect() {
 
 @Composable
 fun AudioVisualizer(fftData: FloatArray) {
+    val hapticFeedback = LocalHapticFeedback.current
+    
+    LaunchedEffect(fftData) {
+        val sum = fftData.sum()
+        if (sum > 40f) { // Threshold for a noticeable beat/audio level
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+    }
+
     Canvas(
         modifier = Modifier
             .widthIn(max = 600.dp)
