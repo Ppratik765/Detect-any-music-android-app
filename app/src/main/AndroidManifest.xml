@@ -43,7 +43,7 @@
         <service
             android:name=".audio.AuraQuickTileService"
             android:label="Aura"
-            android:icon="@mipmap/ic_launcher"
+            android:icon="@drawable/ic_qs_aura"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:exported="true">
             <intent-filter>

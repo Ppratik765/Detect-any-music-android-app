@@ -16,7 +16,7 @@ class AuraQuickTileService : TileService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.subtitle = "Identify Music"
         }
-        tile.icon = Icon.createWithResource(this, R.mipmap.ic_launcher)
+        tile.icon = Icon.createWithResource(this, R.drawable.ic_qs_aura)
         tile.state = Tile.STATE_INACTIVE
         tile.updateTile()
     }
