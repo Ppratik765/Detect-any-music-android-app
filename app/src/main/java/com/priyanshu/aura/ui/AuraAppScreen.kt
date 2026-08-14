@@ -76,7 +76,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    val isWideScreen = configuration.screenWidthDp >= 600
+    val isPassportFoldable = configuration.screenWidthDp >= 600 && configuration.screenHeightDp >= 600
     
     // Detect exceptionally small screens (like Galaxy Z Flip cover display)
     val isCompactHeight = configuration.screenHeightDp < 480
@@ -109,7 +109,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
 
 
     val paddingEnd by androidx.compose.animation.core.animateDpAsState(
-        targetValue = if (state is AuraState.Success && isWideScreen) (configuration.screenWidthDp / 2f).dp else 0.dp,
+        targetValue = if (state is AuraState.Success && isPassportFoldable) (configuration.screenWidthDp / 2f).dp else 0.dp,
         animationSpec = tween(500),
         label = "mainContentPadding"
     )
@@ -242,14 +242,14 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         }
 
         // Result Sheet
-        val enterAnimation = if (isWideScreen) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
-        val exitAnimation = if (isWideScreen) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
+        val enterAnimation = if (isPassportFoldable) slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(500)) + fadeIn(tween(500)) else slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn(tween(500))
+        val exitAnimation = if (isPassportFoldable) slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut(tween(300)) else slideOutVertically(targetOffsetY = { it }, animationSpec = tween(300)) + fadeOut(tween(300))
 
         AnimatedVisibility(
             visible = state is AuraState.Success,
             enter = enterAnimation,
             exit = exitAnimation,
-            modifier = Modifier.align(if (isWideScreen) Alignment.CenterEnd else Alignment.BottomCenter)
+            modifier = Modifier.align(if (isPassportFoldable) Alignment.CenterEnd else Alignment.BottomCenter)
         ) {
             val result = (state as? AuraState.Success)?.result
             if (result != null) {
@@ -258,7 +258,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 }
                 ResultBottomSheet(
                     result = result,
-                    isWideScreen = isWideScreen,
+                    isPassportFoldable = isPassportFoldable,
                     onClose = { viewModel.resetToIdle() },
                     onExplain = { viewModel.showExplanation() }
                 )
@@ -382,7 +382,7 @@ fun SkeletonLoader() {
 }
 
 @Composable
-fun ResultBottomSheet(result: SongResult, isWideScreen: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
+fun ResultBottomSheet(result: SongResult, isPassportFoldable: Boolean, onClose: () -> Unit, onExplain: () -> Unit) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isCompactHeight = configuration.screenHeightDp < 480
@@ -397,7 +397,7 @@ fun ResultBottomSheet(result: SongResult, isWideScreen: Boolean, onClose: () -> 
     }
 
     val maxPortraitHeight = (configuration.screenHeightDp * 0.72f).dp
-    val sheetModifier = if (isWideScreen) {
+    val sheetModifier = if (isPassportFoldable) {
         Modifier
             .fillMaxHeight()
             .fillMaxWidth(0.5f)
@@ -408,7 +408,7 @@ fun ResultBottomSheet(result: SongResult, isWideScreen: Boolean, onClose: () -> 
             .height(maxPortraitHeight)
     }
 
-    val sheetShape = if (isWideScreen) {
+    val sheetShape = if (isPassportFoldable) {
         RoundedCornerShape(topStart = 32.dp, bottomStart = 32.dp)
     } else {
         RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
