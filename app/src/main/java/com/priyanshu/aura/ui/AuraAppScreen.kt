@@ -43,6 +43,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -53,6 +56,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +95,17 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         }
     }
 
+    var showHistory by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+
+    if (showHistory) {
+        HistoryScreen(viewModel = viewModel, onBack = { showHistory = false })
+        return
+    }
+
+    // if (showSettings) will be added in Phase 4 for Auto-Aura Settings
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -96,6 +113,20 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         contentAlignment = Alignment.Center
     ) {
         if (isLandscape) {
+            // Top Right Icons
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                IconButton(onClick = { showSettings = true }) {
+                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
+                }
+                IconButton(onClick = { showHistory = true }) {
+                    Icon(imageVector = Icons.Default.History, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -192,6 +223,20 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                 }
             }
         } else {
+            // Top Right Icons
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                IconButton(onClick = { showSettings = true }) {
+                    Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
+                }
+                IconButton(onClick = { showHistory = true }) {
+                    Icon(imageVector = Icons.Default.History, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
