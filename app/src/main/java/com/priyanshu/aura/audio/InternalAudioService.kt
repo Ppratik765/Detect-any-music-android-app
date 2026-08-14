@@ -30,6 +30,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
+import androidx.core.content.IntentCompat
+
 class InternalAudioService : Service() {
 
     private val CHANNEL_ID = "AuraInternalCaptureChannel"
@@ -42,7 +44,7 @@ class InternalAudioService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val resultCode = intent?.getIntExtra("RESULT_CODE", Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
-        val data = intent?.getParcelableExtra<Intent>("DATA")
+        val data = intent?.let { IntentCompat.getParcelableExtra(it, "DATA", Intent::class.java) }
 
         createNotificationChannels()
         startForeground(1, createListeningNotification())
