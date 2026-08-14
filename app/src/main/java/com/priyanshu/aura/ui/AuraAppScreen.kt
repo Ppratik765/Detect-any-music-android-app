@@ -521,14 +521,16 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
     Surface(
         modifier = sheetModifier,
         shape = sheetShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 16.dp
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shadowElevation = 24.dp,
+        tonalElevation = 8.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(if (isCompactWidth) 16.dp else 32.dp),
+                .padding(if (isCompactWidth) 16.dp else 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -546,7 +548,11 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                         .padding(8.dp)
                 )
                 IconButton(onClick = onClose) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurface)
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
             }
 
@@ -561,7 +567,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.background,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(48.dp)
                 )
             }
@@ -572,7 +578,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                 text = result.title,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 textAlign = TextAlign.Center
             )
 
@@ -581,7 +587,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
             Text(
                 text = result.artist,
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
                 textAlign = TextAlign.Center
             )
 
@@ -652,7 +658,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
                 text = "Lyrics",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Start
             )
@@ -662,21 +668,21 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
             if (isLyricsLoading) {
                 Text(
                     text = "Loading lyrics...",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Start
                 )
             } else if (lyricsText.isNullOrBlank()) {
                 Text(
                     text = "No lyrics found for this song.",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Start
                 )
             } else {
                 Text(
                     text = lyricsText ?: "",
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.85f),
                     lineHeight = 24.sp,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Start
