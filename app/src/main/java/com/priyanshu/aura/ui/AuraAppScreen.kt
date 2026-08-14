@@ -44,7 +44,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,7 +103,10 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
         return
     }
 
-    // if (showSettings) will be added in Phase 4 for Auto-Aura Settings
+    if (showSettings) {
+        SettingsScreen(onBack = { showSettings = false })
+        return
+    }
 
 
     Box(
@@ -123,7 +126,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 IconButton(onClick = { showHistory = true }) {
-                    Icon(imageVector = Icons.Default.History, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.Default.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
 
@@ -233,7 +236,7 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 IconButton(onClick = { showHistory = true }) {
-                    Icon(imageVector = Icons.Default.History, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.Default.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
 

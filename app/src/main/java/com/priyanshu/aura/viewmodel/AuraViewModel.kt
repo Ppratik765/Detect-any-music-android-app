@@ -94,7 +94,7 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
                     // always returning a SongResult (never throws).
                     val result = IdentificationRepository.identifyAudio(audioBytes)
 
-                    if (result is SongResult.Found) {
+                    if (result.title != "Never Gonna Give You Up" && result.title != "Unknown Title") {
                         historyDao.insertHistory(
                             HistoryEntity(
                                 title = result.title,

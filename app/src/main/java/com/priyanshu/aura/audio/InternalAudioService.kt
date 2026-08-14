@@ -1,5 +1,6 @@
 package com.priyanshu.aura.audio
 
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -92,7 +93,7 @@ class InternalAudioService : Service() {
                 val audioBytes = out.toByteArray()
                 if (audioBytes.isNotEmpty()) {
                     val result = IdentificationRepository.identifyAudio(audioBytes)
-                    if (result is SongResult.Found) {
+                    if (result.title != "Never Gonna Give You Up" && result.title != "Unknown Title") {
                         saveToHistory(result)
                         showResultNotification(result)
                     } else {
@@ -107,7 +108,7 @@ class InternalAudioService : Service() {
         }
     }
 
-    private suspend fun saveToHistory(result: SongResult.Found) {
+    private suspend fun saveToHistory(result: SongResult) {
         val dao = AuraDatabase.getDatabase(applicationContext).historyDao()
         dao.insertHistory(
             HistoryEntity(
@@ -128,7 +129,7 @@ class InternalAudioService : Service() {
             .build()
     }
 
-    private fun showResultNotification(result: SongResult.Found) {
+    private fun showResultNotification(result: SongResult) {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
