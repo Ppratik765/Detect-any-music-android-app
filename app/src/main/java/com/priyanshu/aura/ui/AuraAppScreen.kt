@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -499,6 +500,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
     }
 
     val landscapeWidth = (configuration.screenWidthDp * 0.5f).dp.coerceIn(350.dp, 500.dp)
+    val maxPortraitHeight = (configuration.screenHeightDp * 0.72f).dp
     val sheetModifier = if (isLandscape) {
         Modifier
             .fillMaxHeight()
@@ -507,6 +509,7 @@ fun ResultBottomSheet(result: SongResult, isLandscape: Boolean, onClose: () -> U
         Modifier
             .widthIn(max = 600.dp)
             .fillMaxWidth()
+            .heightIn(max = maxPortraitHeight)
     }
 
     val sheetShape = if (isLandscape) {
