@@ -78,6 +78,9 @@ import com.priyanshu.aura.network.SongResult
 import com.priyanshu.aura.viewmodel.AuraState
 import com.priyanshu.aura.viewmodel.AuraViewModel
 
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.automirrored.filled.List
+
 @Composable
 fun AuraAppScreen(viewModel: AuraViewModel) {
     val state by viewModel.uiState.collectAsState()
@@ -122,13 +125,14 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 IconButton(onClick = { showSettings = true }) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 IconButton(onClick = { showHistory = true }) {
-                    Icon(imageVector = Icons.Default.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
 
@@ -232,13 +236,14 @@ fun AuraAppScreen(viewModel: AuraViewModel) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 IconButton(onClick = { showSettings = true }) {
                     Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 IconButton(onClick = { showHistory = true }) {
-                    Icon(imageVector = Icons.Default.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = "History", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
 
