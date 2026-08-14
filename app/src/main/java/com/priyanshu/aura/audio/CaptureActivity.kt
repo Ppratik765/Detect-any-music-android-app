@@ -54,10 +54,8 @@ class CaptureActivity : ComponentActivity() {
                 val hapticFeedback = LocalHapticFeedback.current
                 
                 LaunchedEffect(Unit) {
-                    if (orbState is OrbState.Selection) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        startExternalAudio()
-                    }
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    startExternalAudio()
                 }
 
                 Box(
@@ -74,12 +72,7 @@ class CaptureActivity : ComponentActivity() {
                             GlowingOrb(isProcessing = state is OrbState.Processing)
                         }
                         is OrbState.Success -> {
-                            LaunchedEffect(state.result) {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            }
-                            SuccessCard(state.result) {
-                                finish()
-                            }
+                            // Should not be reached visually since we redirect, but handle just in case
                         }
                         is OrbState.Error -> {
                             LaunchedEffect(state.message) {
@@ -121,12 +114,30 @@ class CaptureActivity : ComponentActivity() {
     private fun startExternalAudio() {
         OrbStateHolder.updateState(OrbState.Listening)
         lifecycleScope.launch {
+            // Automatically stop recording after 8 seconds (fast aesthetic identification)
+            val timeoutJob = launch {
+                kotlinx.coroutines.delay(8_000)
+                audioRecorder.stopRecording()
+            }
+            
             val audioBytes = audioRecorder.startRecording { _ -> }
+            timeoutJob.cancel()
+            
             if (audioBytes != null && audioBytes.isNotEmpty()) {
                 OrbStateHolder.updateState(OrbState.Processing)
                 val result = IdentificationRepository.identifyAudio(audioBytes)
                 if (result.title != "Never Gonna Give You Up" && result.title != "Unknown Title") {
-                    OrbStateHolder.updateState(OrbState.Success(result))
+                    // Redirect back to Aura App with the result
+                    val intent = Intent(this@CaptureActivity, com.priyanshu.aura.MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        putExtra("EXTRA_TITLE", result.title)
+                        putExtra("EXTRA_ARTIST", result.artist)
+                        putExtra("EXTRA_ALBUM_COVER_URL", result.albumCoverUrl)
+                        putExtra("EXTRA_SPOTIFY_ID", result.spotifyId)
+                        putExtra("EXTRA_YOUTUBE_ID", result.youtubeId)
+                    }
+                    startActivity(intent)
+                    finish()
                 } else {
                     OrbStateHolder.updateState(OrbState.Error("No match found"))
                 }
