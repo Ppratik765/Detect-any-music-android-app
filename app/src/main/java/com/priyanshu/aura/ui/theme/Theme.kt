@@ -44,7 +44,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun AuraTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
