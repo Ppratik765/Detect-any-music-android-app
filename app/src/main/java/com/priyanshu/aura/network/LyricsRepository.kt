@@ -31,13 +31,17 @@ object LyricsRepository {
                 connection.disconnect()
                 
                 val root = JSONObject(responseBody)
-                // Prefer synced lyrics, fallback to plain
-                var lyrics = root.optString("syncedLyrics", "")
-                if (lyrics.isBlank()) {
-                    lyrics = root.optString("plainLyrics", "")
+                // Prefer plainLyrics if available as it is already formatted without timestamps
+                var plainLyrics = root.optString("plainLyrics", "")
+                if (plainLyrics.isNotBlank()) {
+                    return@withContext plainLyrics.trim()
                 }
-                
-                if (lyrics.isNotBlank()) return@withContext lyrics
+
+                // If only syncedLyrics is available, strip out the timestamps [mm:ss.xx]
+                val syncedLyrics = root.optString("syncedLyrics", "")
+                if (syncedLyrics.isNotBlank()) {
+                    return@withContext cleanLyrics(syncedLyrics)
+                }
             }
             connection.disconnect()
             return@withContext null
@@ -45,5 +49,18 @@ object LyricsRepository {
             Log.e(TAG, "Failed to fetch lyrics", e)
             return@withContext null
         }
+    }
+
+    private fun cleanLyrics(raw: String): String {
+        return raw.lines()
+            .map { line ->
+                // Strip timestamps like [00:12.34], [01:05.123], [02:10]
+                line.replace(Regex("^\\[\\d+:\\d+(?:\\.\\d+)?\\]\\s*"), "")
+                    .replace(Regex("\\[\\d+:\\d+(?:\\.\\d+)?\\]"), "")
+            }
+            // Strip metadata headers like [ar:Artist], [ti:Title], [length:03:30]
+            .filterNot { it.matches(Regex("^\\[[a-zA-Z]+:.*?\\]$")) }
+            .joinToString("\n")
+            .trim()
     }
 }
