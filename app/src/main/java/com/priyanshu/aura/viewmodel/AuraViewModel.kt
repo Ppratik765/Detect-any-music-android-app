@@ -153,6 +153,22 @@ class AuraViewModel(application: Application) : AndroidViewModel(application) {
         recordingJob?.cancel()
     }
     
+    fun setResultFromIntent(result: SongResult) {
+        // Insert into history just like normal identification
+        viewModelScope.launch {
+            historyDao.insertHistory(
+                HistoryEntity(
+                    title = result.title,
+                    artist = result.artist,
+                    albumCoverUrl = result.albumCoverUrl,
+                    spotifyId = result.spotifyId,
+                    youtubeId = result.youtubeId
+                )
+            )
+        }
+        _uiState.value = AuraState.Success(result, FloatArray(0))
+    }
+    
     // ──────────────────────────────────────────────────────────────────────
     //  History Management
     // ──────────────────────────────────────────────────────────────────────
