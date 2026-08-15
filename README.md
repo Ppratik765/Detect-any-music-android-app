@@ -38,7 +38,7 @@ This project bridges theoretical continuous-time and discrete-time signal proces
 
 ## 1. Academic Context
 
-Developed as an advanced practical implementation for the **Signals and Systems** coursework at **Gati Shakti Vishwavidyalaya**, Aura explores how classical Fourier analysis and frequency-domain transformations operate in real-world, stochastic mobile environments.
+Initially developed as a practical implementation for the **Signals and Systems** coursework at **Gati Shakti Vishwavidyalaya**, Aura explores how classical Fourier analysis and frequency-domain transformations operate in real-world, stochastic mobile environments.
 
 By capturing hardware audio buffers, computing discrete mathematical transformations at 60 FPS, parsing multi-source acoustic fingerprints, and managing state across diverse device form factors (including foldables and Quick Settings tiles), this project demonstrates end-to-end signal analysis and production-grade Android systems engineering.
 
@@ -130,16 +130,16 @@ To ensure stability during connectivity dropouts or API rate-limiting, the netwo
 
 ## 4. Core Features
 
-* 🎵 **Universal Dual-Mode Identification:** Identifies studio master recordings, live speaker playback, and singing/humming melody lines automatically.
-* 🔮 **Floating Glowing Orb (Quick Settings Tile):** Tap the quick tile from any app or home screen to launch a floating overlay with voice activity detection.
-* 📊 **Live 60 FPS FFT Visualizer:** Hardware-accelerated spectral frequency bars reacting dynamically to incoming audio.
-* 📱 **Adaptive Foldable Architecture:** Native multi-window and passport foldable screen support (Galaxy Z Fold, Pixel Fold, tablets), docking results smoothly while preserving the visualizer.
-* 📜 **Synchronized Lyrics & Artwork Caching:** Fetches track lyrics and high-resolution album artwork with smart fallback search algorithms.
-* 🎧 **Deep Music Streaming Links:** One-tap playback redirection to Spotify and YouTube.
-* 🗄️ **Persistent Local History:** Built with Android Room SQLite database to save and replay past discoveries offline.
-* 🌙 **Dynamic Material You & Splash Theming:** Adapts color palettes, UI surfaces, and splash screens directly from the user's Android wallpaper.
-* 🧪 **Interactive DSP Explanation Mode:** In-app educational breakdown displaying mathematical formulas and real-time FFT snapshots.
-* 📳 **Refined Tactile Immersion:** Discrete haptic feedback for button clicks and successful matches.
+* **Universal Dual-Mode Identification:** Identifies studio master recordings, live speaker playback, and singing/humming melody lines automatically.
+* **Floating Glowing Orb (Quick Settings Tile):** Tap the quick tile from any app or home screen to launch a floating overlay with voice activity detection.
+* **Live 60 FPS FFT Visualizer:** Hardware-accelerated spectral frequency bars reacting dynamically to incoming audio.
+* **Adaptive Foldable Architecture:** Native multi-window and passport foldable screen support (Galaxy Z Fold, Pixel Fold, tablets), docking results smoothly while preserving the visualizer.
+* **Synchronized Lyrics & Artwork Caching:** Fetches track lyrics and high-resolution album artwork with smart fallback search algorithms.
+* **Deep Music Streaming Links:** One-tap playback redirection to Spotify and YouTube.
+* **Persistent Local History:** Built with Android Room SQLite database to save and replay past discoveries offline.
+* **Dynamic Material You & Splash Theming:** Adapts color palettes, UI surfaces, and splash screens directly from the user's Android wallpaper.
+* **Interactive DSP Explanation Mode:** In-app educational breakdown displaying mathematical formulas and real-time FFT snapshots.
+* **Refined Tactile Immersion:** Discrete haptic feedback for button clicks and successful matches.
 
 ---
 
