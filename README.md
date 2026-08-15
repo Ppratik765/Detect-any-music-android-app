@@ -1,221 +1,307 @@
-# Aura: Real-Time Audio Fingerprinting & FFT Visualizer
+# Aura: Real-Time Audio Fingerprinting, FFT Visualizer & Query by Humming
 
-Aura is a high-performance, native Android application engineered to identify commercial audio tracks in real-time. Bypassing the limitations of simple API wrappers, Aura operates by directly sampling environmental acoustics, performing a live Fast Fourier Transform (FFT) on raw Pulse-Code Modulation (PCM) data, and extracting acoustic fingerprints. These geometric hashes are subsequently authenticated against a global database using secure RESTful communication.
+Aura is a high-performance, native Android application engineered to identify commercial audio tracks and human melodic input (singing, humming) in real time. Operating far beyond simple API wrappers, Aura directly samples acoustic buffers from hardware, performs real-time Fast Fourier Transforms (FFT) on raw 16-bit Pulse-Code Modulation (PCM) streams, extracts spectral fingerprints and melodic pitch contours, and authenticates these acoustic hashes against global databases.
 
-This application serves as a practical implementation of continuous-time and discrete-time signal analysis, bridging theoretical mathematical models with modern mobile software architecture.
+This project bridges theoretical continuous-time and discrete-time signal processing models with modern mobile software architecture, Material 3 design paradigms, and responsive multi-form factor engineering.
 
-![Slide1](https://github.com/user-attachments/assets/1fdc32dc-c58b-4fa4-a570-4f2d7c55f176)
+![Aura Banner](https://github.com/user-attachments/assets/1fdc32dc-c58b-4fa4-a570-4f2d7c55f176)
 
 ---
+
 ## Table of Contents
 1. [Academic Context](#1-academic-context)
 2. [Mathematical Foundation](#2-mathematical-foundation)
-    - [Time-Domain Acquisition](#time-domain-acquisition)
-    - [The Fast Fourier Transform](#the-fast-fourier-transform)
-    - [Acoustic Fingerprinting](#acoustic-fingerprinting)
-    - [Query by Humming (QbH)](#query-by-humming-qbh)
-3. [System Architecture](#3-system-architecture)
-    - [Application Layers](#application-layers)
-    - [Intelligent Localisation Parsing](#intelligent-localisation-parsing)
-    - [Fault Tolerance](#fault-tolerance)
+   - [Time-Domain Acquisition](#time-domain-acquisition)
+   - [Fast Fourier Transform (FFT)](#fast-fourier-transform-fft)
+   - [Acoustic Fingerprinting & Spectrogram Hashing](#acoustic-fingerprinting--spectrogram-hashing)
+   - [Query by Humming (QbH) & Pitch Contouring](#query-by-humming-qbh--pitch-contouring)
+3. [System Architecture & Design](#3-system-architecture--design)
+   - [MVVM Layered Architecture](#mvvm-layered-architecture)
+   - [Smart Voice Activity Detection (VAD)](#smart-voice-activity-detection-vad)
+   - [Intelligent Metadata Localization](#intelligent-metadata-localization)
+   - [Demo-Safe Fault Tolerance](#demo-safe-fault-tolerance)
 4. [Core Features](#4-core-features)
-5. [Technology Stack](#5-technology-stack)
-6. [API Integration and Security](#6-api-integration-and-security)
-7. [Repository Structure](#7-repository-structure)
-8. [Installation and Configuration](#8-installation-and-configuration)
-9. [Usage Instructions](#9-usage-instructions)
-10. [Future Scope](#10-future-scope)
-11. [License and Citation](#11-license-and-citation)
+5. [User Interface & Experience](#5-user-interface--experience)
+   - [Samsung-Inspired Quick Settings Floating Orb](#samsung-inspired-quick-settings-floating-orb)
+   - [Adaptive Foldable & Split-Screen Engine](#adaptive-foldable--split-screen-engine)
+   - [Dynamic Material You & Splash Theming](#dynamic-material-you--splash-theming)
+   - [Interactive DSP Explanation Inspector](#interactive-dsp-explanation-inspector)
+6. [Technology Stack](#6-technology-stack)
+7. [API Integration & Security](#7-api-integration--security)
+8. [Repository Structure](#8-repository-structure)
+9. [Installation & Setup](#9-installation--setup)
+10. [Usage Instructions](#10-usage-instructions)
+11. [Future Roadmap](#11-future-roadmap)
+12. [License and Citation](#12-license-and-citation)
 
 ---
 
 ## 1. Academic Context
 
-This project was developed as a core submission for the **Signals and Systems** coursework at **Gati Shakti Vishwavidyalaya**. The primary objective was to move beyond textbook derivations of the Fourier series and apply frequency-domain transformations to solve a real-world computational problem: identifying stochastic audio signals in noisy environments. 
+Developed as an advanced practical implementation for the **Signals and Systems** coursework at **Gati Shakti Vishwavidyalaya**, Aura explores how classical Fourier analysis and frequency-domain transformations operate in real-world, stochastic mobile environments.
 
-By handling hardware-level audio buffers, implementing mathematical transformation algorithms, and designing a reactive user interface to visualise this data in real-time, the project demonstrates a comprehensive understanding of end-to-end system design.
+By capturing hardware audio buffers, computing discrete mathematical transformations at 60 FPS, parsing multi-source acoustic fingerprints, and managing state across diverse device form factors (including foldables and Quick Settings tiles), this project demonstrates end-to-end signal analysis and production-grade Android systems engineering.
 
 ---
 
 ## 2. Mathematical Foundation
 
-The core functionality of Aura relies heavily on digital signal processing (DSP) principles.
-
 ### Time-Domain Acquisition
-Environmental audio is captured via the device microphone using the Android `AudioRecord` API. The continuous analog signal is discretised into a digital format.
-* **Sample Rate:** 44,100 Hz (Standard CD quality, satisfying the Nyquist-Shannon sampling theorem for human hearing ranges up to ~22 kHz).
-* **Format:** 16-bit PCM (Pulse-Code Modulation), providing 65,536 possible amplitude values per sample.
-* **Buffer Size:** Captured in asynchronous chunks to prevent main-thread blocking, representing the signal in the Time Domain $f(t)$.
+Audio is acquired directly from the device microphone via Android's low-latency `AudioRecord` API:
+* **Sampling Rate ($f_s$):** $44,100\text{ Hz}$ (satisfying the Nyquist-Shannon sampling theorem $f_s > 2B$ for human auditory bandwidth $B \approx 20\text{ kHz}$).
+* **Quantization:** 16-bit signed Linear PCM ($65,536$ discrete amplitude levels, dynamic range $\approx 96\text{ dB}$).
+* **Channel Configuration:** Mono channel capture windowed into asynchronous power-of-two buffers ($N = 2048$) to eliminate main-thread starvation.
 
-### The Fast Fourier Transform
-A raw PCM array represents amplitude over time, which is highly susceptible to phase shifts, volume changes, and background noise. To reliably identify audio, the signal must be analysed in the Frequency Domain $F(\omega)$. 
+### Fast Fourier Transform (FFT)
+A raw PCM array captures amplitude over time $f(t)$, making it sensitive to phase deviations, amplitude variance, and environmental noise. To analyze acoustic harmonics, the signal is transformed into the Frequency Domain $F(\omega)$.
 
-Aura utilises the Fast Fourier Transform (FFT), an optimised algorithm for computing the Discrete Fourier Transform (DFT), reducing the computational complexity from $O(N^2)$ to $O(N \log N)$. 
+Aura implements an optimized radix-2 decimation-in-time Cooley-Tukey FFT algorithm, reducing computational complexity from $\mathcal{O}(N^2)$ to $\mathcal{O}(N \log N)$:
 
-The continuous transformation is defined as:
 $$F(\omega) = \int_{-\infty}^{\infty} f(t)e^{-i\omega t}dt$$
 
-In the digital implementation, the FFT processes the windowed PCM buffers to extract the dominant constituent frequencies (sine and cosine waves). These frequency bins are pushed to the UI layer to render the real-time visualiser, proving active spectral analysis.
+For discrete samples $x[n]$ of length $N$:
 
-### Acoustic Fingerprinting
-When listening to a master recording (a studio track), the system creates an acoustic fingerprint:
-1.  **Spectrogram Generation:** The FFT outputs are plotted on a 3D graph (Time vs. Frequency vs. Amplitude).
-2.  **Peak Extraction:** Only the highest amplitude points (local maxima) are retained, discarding background noise.
-3.  **Constellation Mapping:** These peaks form a geometric constellation map. The spatial relationship between these points forms a lightweight, highly unique cryptographic hash that is insensitive to volume changes and minor distortion.
+$$X[k] = \sum_{n=0}^{N-1} x[n] \cdot e^{-i 2\pi k n / N}, \quad k = 0, 1, \dots, N-1$$
 
-### Query by Humming (QbH)
-To support human vocal recognition, Aura simultaneously processes the audio buffer through a Query by Humming engine. Unlike fingerprinting, which maps all constituent frequencies, the QbH algorithm isolates the **fundamental pitch contour** of the human voice over time. It extracts the raw melody line and matches this isolated mathematical contour against an expansive database of MIDI files and recorded compositions.
+The resulting complex vectors yield real and imaginary components used to calculate magnitude spectra:
+
+$$\text{Magnitude}[k] = \sqrt{\text{Re}(X[k])^2 + \text{Im}(X[k])^2}$$
+
+These magnitudes are normalized and rendered in real-time onto the Compose canvas at 60 FPS.
+
+### Acoustic Fingerprinting & Spectrogram Hashing
+For master studio recordings:
+1. **Spectrogram Generation:** Time-series FFT windows generate a 3D time-frequency-energy distribution.
+2. **Local Peak Extraction:** High-energy anchor points (spectral peaks resistant to background noise) are extracted.
+3. **Constellation Map Hashing:** Combinatorial pairs of peak frequencies and time differentials $(\Delta t)$ form cryptographic hashes matched against fingerprint indexes.
+
+### Query by Humming (QbH) & Pitch Contouring
+For human voice, singing, or humming:
+* Standard spectral hashing fails due to vocal timbre variability and polyphonic complexity.
+* Aura's QbH pipeline isolates the **fundamental frequency contour ($f_0$ pitch track)** over time, abstracting acoustic audio into invariant melodic intervals matched against global composition and MIDI databases.
 
 ---
 
-## 3. System Architecture
+## 3. System Architecture & Design
 
-Aura is built strictly adhering to the **MVVM (Model-View-ViewModel)** architectural pattern, ensuring a unidirectional data flow and clear separation of concerns.
+Aura is built on modern **Clean Architecture & MVVM (Model-View-ViewModel)** design principles with reactive, unidirectional state flows.
 
-### Application Layers
-* **UI Layer (Jetpack Compose):** A declarative, state-driven interface. It observes state flows from the ViewModel. Includes a custom `Canvas` implementation for rendering the fluid FFT bar visualiser at 60 FPS, alongside a Smart Fallback UI for metadata routing.
-* **Presentation Layer (ViewModel):** Manages the state machine (Idle, Listening, Processing, Success, Error). Utilises Kotlin Coroutines (`viewModelScope`) to handle asynchronous hardware and network operations without blocking the main UI thread.
-* **Domain / Data Layer (Repositories):** Interfaces with the hardware (`AudioRecordManager`) and the remote server (`ACRCloudRepository`). It implements a combined-engine network request, resolving both fingerprint and melody matches simultaneously.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                       │
+│  ┌────────────────────┐   ┌──────────────────────────────┐  │
+│  │ AuraAppScreen (UI) │   │ CaptureActivity (Quick Tile) │  │
+│  └─────────┬──────────┘   └──────────────┬───────────────┘  │
+│            │                             │                  │
+│            ▼                             ▼                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │         AuraViewModel & OrbStateHolder (State)        │  │
+│  └───────────────────────────┬───────────────────────────┘  │
+└──────────────────────────────┼──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│                       Domain Layer                          │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  IdentificationRepository  │   LyricsRepository       │  │
+│  └───────────────────────────┬───────────────────────────┘  │
+└──────────────────────────────┼──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│                    Data & Hardware Layer                    │
+│  ┌────────────────────────┐  ┌───────────────────────────┐  │
+│  │ AudioRecorder & FFT    │  │ AuraDatabase (Room SQL)   │  │
+│  └────────────────────────┘  └───────────────────────────┘  │
+│  ┌────────────────────────┐  ┌───────────────────────────┐  │
+│  │ AcrCloudApi & HMAC-SHA1│  │ AmbientListeningService   │  │
+│  └────────────────────────┘  └───────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### Intelligent Localisation Parsing
-Due to the global nature of the QbH database, melody matches frequently return regional or non-English metadata (e.g., Japanese karaoke tracks). Aura's data layer implements an algorithmic filter using Regular Expressions (Regex). It scans the returned JSON array of potential matches and actively prioritises track data encoded in standard English (ASCII) characters, ensuring a consistent and readable user experience.
+### Smart Voice Activity Detection (VAD)
+To prevent generating oversized acoustic buffers during idle monitoring, Aura includes continuous amplitude & spectral energy evaluation. In Quick Settings mode, the recorder stays in low-overhead memory monitoring; once audio energy crosses a defined threshold ($\sum |F(\omega)| > 25$), it triggers active 10-second capture without accumulating leading silence.
 
-### Fault Tolerance
-A critical engineering requirement was robustness during live demonstrations. The application features a "Demo-Safe" fallback architecture. If the ACRCloud API experiences rate limiting, server outages, or if the device loses network connectivity, the repository layer catches the `IOException` or HTTP 4xx/5xx errors and yields a deterministic mock success state. This guarantees uninterrupted application flow during critical presentations.
+### Intelligent Metadata Localization
+Melody databases often return non-ASCII regional titles (e.g., Japanese/Korean karaoke tags). Aura includes an algorithmic fallback and sanitation pipeline that prioritizes standard international metadata (ASCII/Latin scripts) for clean UI presentation.
+
+### Demo-Safe Fault Tolerance
+To ensure stability during connectivity dropouts or API rate-limiting, the network layer includes intelligent error handling and deterministic mock resolution fallbacks, preventing unhandled crashes or infinite processing states.
 
 ---
 
 ## 4. Core Features
 
-* **Dual-Engine Recognition:** Simultaneously queries Master Recordings (via Fingerprinting) and Musical Compositions (via QbH pitch contour extraction).
-* **Real-Time Spectral Visualisation:** Transforms raw PCM audio arrays into dynamic, visual frequency bars using Jetpack Compose graphics APIs.
-* **Intelligent Localisation Filtering:** Actively parses and sanitises JSON arrays to prioritise recognisable, standard English metadata over regional variants.
-* **Smart Fallback UI:** Deep-links directly to specific tracks on Spotify and YouTube when exact IDs are present, and seamlessly falls back to executing dynamic search queries on those platforms when only the composition melody is matched.
-* **Asynchronous Processing:** Entirely coroutine-based architecture ensuring zero UI thread starvation during heavy FFT mathematical computations or network latency.
+* 🎵 **Universal Dual-Mode Identification:** Identifies studio master recordings, live speaker playback, and singing/humming melody lines automatically.
+* 🔮 **Floating Glowing Orb (Quick Settings Tile):** Tap the quick tile from any app or home screen to launch a floating overlay with voice activity detection.
+* 📊 **Live 60 FPS FFT Visualizer:** Hardware-accelerated spectral frequency bars reacting dynamically to incoming audio.
+* 📱 **Adaptive Foldable Architecture:** Native multi-window and passport foldable screen support (Galaxy Z Fold, Pixel Fold, tablets), docking results smoothly while preserving the visualizer.
+* 📜 **Synchronized Lyrics & Artwork Caching:** Fetches track lyrics and high-resolution album artwork with smart fallback search algorithms.
+* 🎧 **Deep Music Streaming Links:** One-tap playback redirection to Spotify and YouTube.
+* 🗄️ **Persistent Local History:** Built with Android Room SQLite database to save and replay past discoveries offline.
+* 🌙 **Dynamic Material You & Splash Theming:** Adapts color palettes, UI surfaces, and splash screens directly from the user's Android wallpaper.
+* 🧪 **Interactive DSP Explanation Mode:** In-app educational breakdown displaying mathematical formulas and real-time FFT snapshots.
+* 📳 **Refined Tactile Immersion:** Discrete haptic feedback for button clicks and successful matches.
 
 ---
 
-## 5. Technology Stack
+## 5. User Interface & Experience
 
-* **Language:** Kotlin (1.9+)
-* **UI Toolkit:** Jetpack Compose (Material Design 3)
-* **Architecture:** MVVM, Clean Architecture principles
-* **Concurrency:** Kotlin Coroutines, Kotlin Flows (`StateFlow`, `SharedFlow`)
-* **Networking:** `HttpURLConnection` / OkHttp3
-* **Security:** `javax.crypto.Mac` (HMAC-SHA1 Signature Generation)
-* **Build System:** Gradle (Kotlin DSL)
-* **Minimum SDK:** API Level 26 (Android 8.0 Oreo)
-* **Target SDK:** API Level 34 (Android 14)
+### Samsung-Inspired Quick Settings Floating Orb
+Tapping Aura's Quick Settings tile invokes `CaptureActivity`, rendering a floating translucent glowing orb directly over the active screen:
+* **Idle State:** Displays *"Play, sing or hum a song..."* while running background energy detection.
+* **Listening State:** Automatically transitions to *"Listening..."* upon detecting acoustic signals.
+* **Cinematic Redirection:** Completes recognition and transitions into the main app with smooth cross-fade animations.
 
----
-
-## 6. API Integration and Security
-
-Aura integrates with the ACRCloud REST API (`/v1/identify`) utilising their combined fingerprinting and humming engine. 
-
-For security purposes, ACRCloud does not use static API keys. Instead, it requires a dynamically generated HMAC-SHA1 signature for every single request. The application securely constructs this signature by hashing a string payload containing the HTTP Method, HTTP URI, Access Key, Data Type, Signature Version, and the current UNIX timestamp, signed using the Secret Key. 
-
-Due to the sensitive nature of the `Access Key` and `Secret Key`, these values are strictly excluded from version control. They are injected at compile-time via `local.properties` and the `BuildConfig` object.
+### Adaptive Foldable & Split-Screen Engine
+On devices with width $\ge 600\text{dp}$ and height $\ge 600\text{dp}$ (Passport foldables), Aura dynamically splits its interface:
+* **Left Screen:** Centers the interactive pulsating audio visualizer and action controls.
+* **Right Screen:** Slides in the `ResultBottomSheet` containing metadata, lyrics, and streaming links.
+* **Standard Displays:** Automatically falls back to a 72% screen height bottom sheet for single-hand use.
 
 ---
 
-## 7. Repository Structure
+## 6. Technology Stack
+
+* **Language:** Kotlin 2.0+
+* **UI Framework:** Jetpack Compose (Material Design 3)
+* **Architecture:** MVVM, Clean Architecture, Kotlin Coroutines & Flow (`StateFlow`)
+* **Local Persistence:** AndroidX Room Database & SQLite
+* **Image Loading:** Coil Compose
+* **Signal Processing:** Custom Cooley-Tukey Radix-2 FFT Engine & PCM Audio Streamer
+* **Cryptography:** `javax.crypto.Mac` (HMAC-SHA1 Dynamic Request Signing)
+* **Build System:** Gradle (Kotlin DSL, Version Catalogs)
+* **SDK Compatibility:** Min SDK 26 (Android 8.0 Oreo) | Target SDK 35 (Android 15)
+
+---
+
+## 7. API Integration & Security
+
+Aura interfaces with ACRCloud’s `/v1/identify` multi-engine endpoint. 
+
+To maintain cryptographic integrity without embedding static keys, Aura generates dynamic HMAC-SHA1 request signatures per call:
+
+$$\text{Signature} = \text{Base64}\left(\text{HMAC-SHA1}\left(\text{SecretKey}, \text{Method} + \text{"\n"} + \text{URI} + \text{"\n"} + \text{AccessKey} + \text{"\n"} + \text{DataType} + \text{"\n"} + \text{SigVersion} + \text{"\n"} + \text{Timestamp}\right)\right)$$
+
+Sensitive developer credentials (`ACR_HOST`, `ACR_ACCESS_KEY`, `ACR_SECRET_KEY`) are kept in `local.properties` and injected via `BuildConfig` at compile time.
+
+---
+
+## 8. Repository Structure
 
 ```text
-aura-music-identifier/
+Aura/
 ├── app/
 │   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/priyanshu/aura/
-│   │   │   │   ├── MainActivity.kt
-│   │   │   │   ├── presentation/
-│   │   │   │   │   ├── AuraViewModel.kt
-│   │   │   │   │   ├── components/
-│   │   │   │   │   │   ├── VisualizerCanvas.kt
-│   │   │   │   │   │   ├── RippleButton.kt
-│   │   │   │   │   │   └── ResultBottomSheet.kt
-│   │   │   │   │   └── theme/
-│   │   │   │   ├── domain/
-│   │   │   │   │   ├── models/
-│   │   │   │   │   │   └── SongResult.kt
-│   │   │   │   │   └── repository/
-│   │   │   │   │       └── IdentificationRepository.kt
-│   │   │   │   └── data/
-│   │   │   │       ├── audio/
-│   │   │   │       │   ├── AudioRecorder.kt
-│   │   │   │       │   └── FFTProcessor.kt
-│   │   │   │       └── network/
-│   │   │   │           ├── ACRCloudClient.kt
-│   │   │   │           └── SignatureGenerator.kt
-│   │   │   └── AndroidManifest.xml
+│   │   └── main/
+│   │       ├── java/com/priyanshu/aura/
+│   │       │   ├── MainActivity.kt
+│   │       │   ├── audio/
+│   │       │   │   ├── AmbientListeningService.kt
+│   │       │   │   ├── AudioRecorder.kt
+│   │       │   │   ├── AuraQuickTileService.kt
+│   │       │   │   ├── CaptureActivity.kt
+│   │       │   │   └── FFT.kt
+│   │       │   ├── data/
+│   │       │   │   ├── AuraDatabase.kt
+│   │       │   │   ├── HistoryDao.kt
+│   │       │   │   └── HistoryEntity.kt
+│   │       │   ├── network/
+│   │       │   │   ├── AcrCloudApi.kt
+│   │       │   │   ├── ArtworkRepository.kt
+│   │       │   │   ├── IdentificationRepository.kt
+│   │       │   │   ├── LyricsRepository.kt
+│   │       │   │   └── SongResult.kt
+│   │       │   ├── ui/
+│   │       │   │   ├── AuraAppScreen.kt
+│   │       │   │   ├── ExplanationScreen.kt
+│   │       │   │   ├── HistoryScreen.kt
+│   │       │   │   ├── SettingsScreen.kt
+│   │       │   │   └── theme/
+│   │       │   │       ├── Color.kt
+│   │       │   │       ├── Theme.kt
+│   │       │   │       └── Type.kt
+│   │       │   └── viewmodel/
+│   │       │       ├── AuraState.kt
+│   │       │       ├── AuraViewModel.kt
+│   │       │       └── OrbStateHolder.kt
+│   │       ├── res/
+│   │       │   ├── drawable/
+│   │       │   ├── values/
+│   │       │   └── values-night/
+│   │       └── AndroidManifest.xml
 │   └── build.gradle.kts
 ├── gradle/
+│   └── libs.versions.toml
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── README.md
 ```
 
-## 8. Installation and Configuration
-To compile and run this application locally, you must supply your own ACRCloud credentials.
+---
 
-**Prerequisites**
-  * Android Studio (Iguana or later recommended).
-  * A physical Android device running Android 8.0+ (Microphone and FFT rendering perform optimally on physical hardware rather than virtual emulators).
-  * An active ACRCloud developer account.
+## 9. Installation & Setup
 
-Step-by-Step Setup
-1. Clone the Repository
-    ```Bash
-    git clone [https://github.com/Ppratik765/Detect-any-music-android-app.git](https://github.com/Ppratik765/Detect-any-music-android-app.git)
-    cd Detect-any-music-android-app
-    ```
-2. Acquire API Credentials
-    * Navigate to the [ACRCloud Console](https://console.acrcloud.com/).
-    * Create a new **Audio & Video Recognition** project.
-    * Select the **Audio Fingerprinting** engine and the **ACRCloud Music** bucket.
-    * Copy your `Host`, `Access Key`, and `Secret Key`.
-3. Configure Local Properties
-    * Open the project in Android Studio.
-    * Locate or create a `local.properties` file in the root directory of the project.
-    * Append the following variables with your specific credentials:
-      ```Properties
-      ACR_HOST="identify-xx-xxxx.acrcloud.com"
-      ACR_ACCESS_KEY="your_access_key_here"
-      ACR_SECRET_KEY="your_secret_key_here"
-      ```
-        * Note: The application level `build.gradle.kts` is pre-configured to read these properties and generate the required BuildConfig fields.
-4. Sync and Build
-    * Click Sync Project with Gradle Files.
-    * Select your connected physical device and click Run.
+### Prerequisites
+* Android Studio (Ladybug / Iguana or later).
+* A physical Android device with microphone support (Android 8.0+).
+* An [ACRCloud Developer Account](https://console.acrcloud.com/).
 
-## 9. Usage Instructions
+### Step-by-Step Setup
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/Ppratik765/Detect-any-music-android-app.git
+   cd Detect-any-music-android-app
+   ```
 
-  1. Launch the Aura application on your Android device.
-  2. Grant the requested `RECORD_AUDIO` permission upon initial startup.
-  3. Ensure ambient music is playing in the background (via speakers, laptop, or public environment).
-  4. Tap the central prominent action button to initiate the listening phase.
-  5. Observe the real-time FFT visualizer reacting to the specific frequency bands of the audio source.
-  6. Upon successful matching (typically 3-5 seconds), the application will transition to the result state, displaying the Track Name, Artist, and associated metadata.
+2. **Configure Credentials:**
+   Create a `local.properties` file in the root directory and add your credentials:
+   ```properties
+   ACR_HOST="identify-xx-xxxx.acrcloud.com"
+   ACR_ACCESS_KEY="your_access_key_here"
+   ACR_SECRET_KEY="your_secret_key_here"
+   ```
 
-## 10. Future Scope
-While the current iteration fulfils the requirements of a functional audio recognition engine, potential areas for expansion include:
+3. **Build and Run:**
+   Sync Gradle and deploy the `:app` module to your device.
 
-  * **Offline Recognition:** Implementing local SQLite databases containing pre-hashed geometric maps for offline matching of specific, targeted audio files without network dependence.
-  
-  * **Continuous Monitoring:** Developing a foreground service to constantly monitor background audio, similar to Google's "Now Playing" feature, utilising highly optimised, low-power DSP algorithms to minimise battery drain.
-  
-  * **Advanced Visualisations:** Expanding the Compose Canvas logic to support a full 3D rolling spectrogram alongside the current 2D frequency bar graph.
+---
 
-## 11. License and Citation
+## 10. Usage Instructions
 
-This project is licensed under the MIT License. You are free to use, modify, and distribute this software, provided that the original copyright notice and this permission notice are included in all copies or substantial portions of the software.
+1. **In-App Identification:**
+   * Open **Aura** and tap the central pulse button.
+   * Play background music or hum/sing a melody.
+   * View live frequency spectrums and explore the matched song, lyrics, and links.
 
-If you utilise this architecture or preprocessing methodology in academic research, please attribute as follows:
+2. **Quick Settings Identification:**
+   * Pull down the Android notification shade and tap the **Aura** tile.
+   * The floating glowing orb will listen, identify the track, and open the result directly.
 
-```Plaintext
-Priyanshu Pratik. (2026). Aura: Real-Time Audio Fingerprinting & FFT Visualizer 
-Gati Shakti Vishwavidyalaya.
+3. **Signal Inspector:**
+   * On any song result, tap **"How this works?"** to inspect the mathematical breakdown and live FFT sample.
+
+---
+
+## 11. Future Roadmap
+
+* [ ] **Bidirectional Playlist Sync:** Auto-add matched tracks into Spotify/YouTube Music playlists.
+* [ ] **AI Song Breakdown:** LLM-generated musical analysis (BPM, key signature, mood, production trivia).
+* [ ] **Word-by-Word Synced Karaoke:** Real-time synchronized LRC lyrics playback.
+* [ ] **Offline Fingerprint Caching:** Offline hash recording with delayed resolution upon network reconnect.
+* [ ] **Wear OS Companion App:** Wrist-based audio identification tile.
+
+---
+
+## 12. License and Citation
+
+This project is open-source under the **MIT License**.
+
+If referencing this project for academic or technical research, please cite:
+
+```bibtex
+@software{Aura2026,
+  author = {Priyanshu Pratik},
+  title = {Aura: Real-Time Audio Fingerprinting, FFT Visualizer & Query by Humming},
+  year = {2026},
+  url = {https://github.com/Ppratik765/Detect-any-music-android-app}
+}
 ```
-For technical inquiries or pull request submissions, please refer to the issues tab or submit a standardised pull request detailing the proposed architectural changes.
-
-   
