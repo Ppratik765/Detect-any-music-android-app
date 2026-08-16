@@ -123,7 +123,7 @@ class CaptureActivity : ComponentActivity() {
                 if (!audioDetected) {
                     // Check if there is significant audio (VAD)
                     val sum = fftData.sum()
-                    if (sum > 25f) { // Threshold for speech/music
+                    if (sum > 38f) { // Threshold for speech/music
                         audioDetected = true
                         OrbStateHolder.updateState(OrbState.Listening)
                         

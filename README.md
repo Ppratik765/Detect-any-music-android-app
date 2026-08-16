@@ -118,7 +118,7 @@ Aura is built on modern **Clean Architecture & MVVM (Model-View-ViewModel)** des
 ```
 
 ### Smart Voice Activity Detection (VAD)
-To prevent generating oversized acoustic buffers during idle monitoring, Aura includes continuous amplitude & spectral energy evaluation. In Quick Settings mode, the recorder stays in low-overhead memory monitoring; once audio energy crosses a defined threshold ($\sum |F(\omega)| > 25$), it triggers active 10-second capture without accumulating leading silence.
+To prevent generating oversized acoustic buffers during idle monitoring, Aura includes continuous amplitude & spectral energy evaluation. In Quick Settings mode, the recorder stays in low-overhead memory monitoring; once audio energy crosses a defined threshold ($\sum |F(\omega)| > 38$), it triggers active 10-second capture without accumulating leading silence.
 
 ### Intelligent Metadata Localization
 Melody databases often return non-ASCII regional titles (e.g., Japanese/Korean karaoke tags). Aura includes an algorithmic fallback and sanitation pipeline that prioritizes standard international metadata (ASCII/Latin scripts) for clean UI presentation.
